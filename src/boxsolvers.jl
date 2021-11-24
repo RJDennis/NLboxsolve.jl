@@ -1,15 +1,3 @@
-struct SolverResults
-
-    solution_method::Symbol
-    initial::Array{Float64,1}
-    zero::Array{Float64,1}
-    fzero::Array{Float64,1}
-    xdist::Float64
-    fdist::Float64
-    iters::Integer
-
-end
-
 function line_search(f::Function,x::Array{Float64,1},d::Array{Float64,1})
 
     alpha = 1.0
@@ -332,13 +320,12 @@ function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},l::Array{T
   
 end
 
-function coleman_li(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat, S <: Integer}
+function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     D = zeros(n,n)
 
-    m(x) = (1/2)*norm(f(x))^2
-    df = ForwardDiff.gradient(m,x)
+    df = j'*f(x)
 
     for i = 1:n
         if df[i] < 0.0 && u[i] < Inf
@@ -380,20 +367,22 @@ function step_selection(f::Function,x::Array{T,1},Dk::Array{T,2},Gk::Array{T,2},
 
     pc = tauk*gk
 
-    if norm(pkn-pc) < 1e-13 # "division by zero errors can otherwise occur"
+    pc_pkn = pc-pkn
+    
+    if norm(-pc_pkn) < 1e-13 # "division by zero errors can otherwise occur"
         return (pc+pkn)/2
     else
-        gammahat   = -(f(x)+jk*pc)'*jk*(pkn-pc)/norm(jk*(pkn-pc))^2
-        if (pc'Gk^2*(pc-pkn))^2 - norm(Gk*(pc-pkn))^2*(norm(Gk*pc)^2-deltak^2) >= 0.0
-            gammaplus  = (pc'*Gk^2*(pc-pkn) + ((pc'Gk^2*(pc-pkn))^2 - norm(Gk*(pc-pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc-pkn))^2
-            gammaminus = (pc'*Gk^2*(pc-pkn) - ((pc'Gk^2*(pc-pkn))^2 - norm(Gk*(pc-pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc-pkn))^2
+        gammahat   = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
+        if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2) >= 0.0
+            gammaplus  = (pc'*Gk^2*(pc_pkn) + ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc_pkn))^2
+            gammaminus = (pc'*Gk^2*(pc_pkn) - ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc_pkn))^2
         else
-            gammaplus  = pc'*Gk^2*(pc-pkn)/norm(Gk*(pc-pkn))^2
-            gammaminus = pc'*Gk^2*(pc-pkn)/norm(Gk*(pc-pkn))^2
+            gammaplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
+            gammaminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
         end
 
         if gammahat > 1.0
-            lambda = zeros(n)
+            #lambda = zeros(n)
             for i = 1:n
                 if (pkn[i]-pc[i]) != 0.0
                     lambda[i] = max(((l[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((u[i] - x[i] - pc[i])/(pkn[i]-pc[i])))
@@ -404,7 +393,7 @@ function step_selection(f::Function,x::Array{T,1},Dk::Array{T,2},Gk::Array{T,2},
             gammatildaplus = minimum(lambda)
             gamma = min(gammahat,gammaplus,theta*gammatildaplus)
         elseif gammahat < 0.0
-            lambda = zeros(n)
+            #lambda = zeros(n)
             for i = 1:n
                 if (-pkn[i]+pc[i]) != 0.0
                     lambda[i] = max(((l[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),((u[i] - x[i] - pc[i])/(-(pkn[i]-pc[i]))))
@@ -455,13 +444,14 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     
     deltak = 1.0 
     theta  = 0.99995 
-    beta1  = 0.25 
-    beta2  = 0.80 
+    beta1  = 0.5#0.25 
+    beta2  = 0.9 
 
     iter = 0
     while true
+
         jk = ForwardDiff.jacobian(f,xk)
-        Dk = coleman_li(f,xk,l,u)
+        Dk = coleman_li(f,jk,xk,l,u)
         Gk = Dk^(-1/2)
         gk = -Dk*jk'f(xk)
    
