@@ -1,7 +1,6 @@
 module NLboxsolve
 
-using ForwardDiff
-using LinearAlgebra
+using ForwardDiff, LinearAlgebra
 
 include("boxsolvers.jl")
 
