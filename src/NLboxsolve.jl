@@ -4,6 +4,8 @@ using ForwardDiff
 
 include("boxsolvers.jl")
 
+export SolverResults
+
 export constrained_newton,
        constrained_levenberg_marquardt,
        constrained_levenberg_marquardt_kyf,
