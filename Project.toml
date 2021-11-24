@@ -8,4 +8,4 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 
 [compat]
 julia = "^1.6"
-ForwardDiff = "^0.10.23"
+ForwardDiff = "^0.10"
