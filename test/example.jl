@@ -35,12 +35,12 @@ function test_nlboxsolve()
     soln1 = nlboxsolve(gershwin,x0,l,u,method = :dogleg,xtol=1e-15,ftol=1e-15)
     soln2 = nlboxsolve(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
 
-    test_one   = norm(soln_newton.zero - soln2.zero) < 1e-14
-    test_two   = norm(soln_lm.zero     - soln2.zero) < 1e-14
-    test_three = norm(soln_lm_kyf.zero - soln2.zero) < 1e-14
-    test_four  = norm(soln_lm_fan.zero - soln2.zero) < 1e-14
-    test_five  = norm(soln_lm_ar.zero  - soln2.zero) < 1e-14
-    test_six   = norm(soln_dogleg.zero - soln2.zero) < 1e-14
+    test_one   = maximum(abs,soln_newton.zero - soln2.zero) < 1e-14
+    test_two   = maximum(abs,soln_lm.zero     - soln2.zero) < 1e-14
+    test_three = maximum(abs,soln_lm_kyf.zero - soln2.zero) < 1e-14
+    test_four  = maximum(abs,soln_lm_fan.zero - soln2.zero) < 1e-14
+    test_five  = maximum(abs,soln_lm_ar.zero  - soln2.zero) < 1e-14
+    test_six   = maximum(abs,soln_dogleg.zero - soln2.zero) < 1e-14
 
     return test_one, test_two, test_three, test_four, test_five, test_six
 
