@@ -1,3 +1,15 @@
+struct SolverResults
+
+    solution_method::Symbol
+    initial::Array{Float64,1}
+    zero::Array{Float64,1}
+    fzero::Array{Float64,1}
+    xdist::Float64
+    fdist::Float64
+    iters::Integer
+
+end
+
 function line_search(f::Function,x::Array{Float64,1},d::Array{Float64,1})
 
     alpha = 1.0
