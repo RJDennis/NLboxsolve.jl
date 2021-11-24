@@ -1,0 +1,10 @@
+name = "NLboxsolve"
+uuid = "57734975-34ee-4662-b82a-2ecfa01d03df"
+authors = ["Richard Dennis <richard.dennis@glasgow.ac.uk>"]
+version = "0.1.0"
+
+[deps]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+
+[compat]
+ForwardDiff = "^0.10.23"
