@@ -22,7 +22,7 @@ Of course there are optional arguments.  The general function call is:
 soln = nlboxsolve(F,x,l,u,xtol,ftol,maxiters,method)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), and ```method``` specifies the algorithm used (defualt = :lm_ar).
+where ```xtol``` is the convergence tolerance applied to the solution point (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), and ```method``` specifies the algorithm used (default = :lm_ar).
 
 The solution algorithms
 -----------------------
