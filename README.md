@@ -51,10 +51,10 @@ which are (hopefully) self-explanatory, but to be explicit the value for ```x```
 References
 ----------
 
-Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Method with a New Line Search for Systems of Nonlinear Equations", Journal of Computational and Applied Mathematics, 300, pp. 30–42.
+Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Method with a New Line Search for Systems of Nonlinear Equations", *Journal of Computational and Applied Mathematics*, 300, pp. 30–42.
 
-Bellavia, S., Macconi, M., and S. Pieraccinin, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", Computational Optimization and Applications, 53, pp. 771–794.
+Bellavia, S., Macconi, M., and S. Pieraccinin, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", *Computational Optimization and Applications*, 53, pp. 771–794.
 
-Fan, J., (2013), "On the Levenberg-Marquardt Methods for Convex Constrained Nonlinear Equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227–241.
+Fan, J., (2013), "On the Levenberg-Marquardt Methods for Convex Constrained Nonlinear Equations", *Journal of Industrial and Management Optimization*, 9, 1, pp. 227–241.
 
-Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", Journal of Computational and Applied Mathematics, 172, pp. 375–397.
+Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", *Journal of Computational and Applied Mathematics*, 172, pp. 375–397.
