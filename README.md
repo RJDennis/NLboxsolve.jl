@@ -46,7 +46,7 @@ Each algorithm returns the solution in a structure that has the following fields
 - fdist
 - iters
 
-which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies the problem is given by ```soln.zero```.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
+which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies the problem is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
 
 References
 ----------
