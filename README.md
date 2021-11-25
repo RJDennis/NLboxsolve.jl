@@ -3,7 +3,7 @@
 Introduction
 ------------
 
-Nlboxsolve.jl is a package containing a small collection of algorithms for soving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
+NLboxsolve.jl is a package containing a small collection of algorithms for soving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
 So far the collection contains six algorithms: one based on Newton's method, four based on Levenberg-Marquardt, and one based on Powell's dogleg method.
 
