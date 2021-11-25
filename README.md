@@ -16,7 +16,7 @@ The key elements to a problem are a function containing the system of equations 
 soln = nlboxsolve(F,x,l,u)
 ```
 
-Of course there are optional arguments.  The general function call is:
+Of course there are optional arguments.  The general function call allows up to four keyword arguments:
 
 ```julia
 soln = nlboxsolve(F,x,l,u,xtol,ftol,maxiters,method)
