@@ -45,6 +45,18 @@ function box_projection(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: A
 
 end
 
+function box_projection!(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+
+    for i in eachindex(x)
+        if x[i] < l[i]
+            x[i] = l[i]
+        elseif x[i] > u[i]
+            x[i] = u[i]
+        end
+    end
+
+end
+
 function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     xk = copy(x)
@@ -56,10 +68,10 @@ function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1
     iter = 1
     while true
 
-        j = ForwardDiff.jacobian(f,xk)
-        xn .= xk .- j\f(xk)
+        jk = ForwardDiff.jacobian(f,xk)
+        xn .= xk .- jk\f(xk)
   
-        xn = box_projection(xn,l,u)
+        box_projection!(xn,l,u)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -79,7 +91,7 @@ function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1
     return results
   
 end
-  
+
 function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     xk = copy(x)
@@ -99,7 +111,7 @@ function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1}
 
         xn .= xk .+ du
 
-        xn = box_projection(xn,l,u)
+        box_projection!(xn,l,u)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
