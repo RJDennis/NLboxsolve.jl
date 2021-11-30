@@ -1,13 +1,15 @@
 name = "NLboxsolve"
 uuid = "57734975-34ee-4662-b82a-2ecfa01d03df"
 authors = ["Richard Dennis <richard.dennis@glasgow.ac.uk>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 
 [compat]
 julia = "^1.6"
 LinearAlgebra = "^1.0"
 ForwardDiff = "^0.10"
+KrylovKit = "^0.5.4"

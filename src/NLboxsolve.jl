@@ -1,6 +1,6 @@
 module NLboxsolve
 
-using ForwardDiff, LinearAlgebra
+using ForwardDiff, LinearAlgebra, KrylovKit
 
 include("boxsolvers.jl")
 
@@ -12,6 +12,7 @@ export constrained_newton,
        constrained_levenberg_marquardt_fan,
        constrained_levenberg_marquardt_ar,
        constrained_dogleg_solver,
+       constrained_newton_krylov,
        nlboxsolve
 
 end

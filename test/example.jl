@@ -31,6 +31,7 @@ function test_nlboxsolve()
     soln_lm_fan = constrained_levenberg_marquardt_fan(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_lm_ar  = constrained_levenberg_marquardt_ar(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_dogleg = constrained_dogleg_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
+    soln_krylov = constrained_newton_krylov(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
 
     soln1 = nlboxsolve(gershwin,x0,l,u,method = :dogleg,xtol=1e-15,ftol=1e-15)
     soln2 = nlboxsolve(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
@@ -41,8 +42,9 @@ function test_nlboxsolve()
     test_four  = maximum(abs,soln_lm_fan.zero - soln2.zero) < 1e-14
     test_five  = maximum(abs,soln_lm_ar.zero  - soln2.zero) < 1e-14
     test_six   = maximum(abs,soln_dogleg.zero - soln2.zero) < 1e-14
+    test_seven = maximum(abs,soln_krylov.zero - soln2.zero) < 1e-14
 
-    return test_one, test_two, test_three, test_four, test_five, test_six
+    return test_one, test_two, test_three, test_four, test_five, test_six, test_seven
 
 end
 

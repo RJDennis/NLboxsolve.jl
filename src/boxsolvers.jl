@@ -10,25 +10,6 @@ struct SolverResults
 
 end
 
-function line_search(f::Function,x::Array{Float64,1},d::Array{Float64,1})
-
-    alpha = 1.0
-    beta  = 0.0001
-    tau   = 0.5
-  
-    decent = (ForwardDiff.gradient(f,x)'*d)[1]
-    if decent > 0.0
-        error("d is not a decent direction")
-    end
-  
-    while f(x+alpha*d) > f(x) + alpha*beta*decent
-        alpha = tau*alpha
-    end
-  
-    return alpha
-  
-end
-  
 function box_projection(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
 
     y = copy(x)
@@ -136,9 +117,9 @@ end
 
 function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima(2004) "Levenberg-Marquardt methods
+    # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
-    # Computational and Applied Mathematics, 172, pp375--397.
+    # Computational and Applied Mathematics, 172, pp. 375--397.
 
     xk = copy(x)
     xn = similar(x)
@@ -169,7 +150,10 @@ function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{
         if norm(f(xk+du)) <= gamma*norm(f(xk))
             xn .= xk .+ s
         elseif (j's)[1] <= -rho*norm(s)^p
-            alpha = line_search(m,xk,s)
+            alpha = 1.0
+            while f(xk+alpha*s) > f(xk) + alpha*beta*j'*s
+                alpha = tau*alpha
+            end
             xn .= xk .+ alpha*s
         else
             t = 1.0
@@ -208,7 +192,7 @@ end
 function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp227--241.
+    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
 
     xk = copy(x)
     xn = similar(x)
@@ -271,7 +255,7 @@ function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},l::Array{T
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
-    # 300, pp30--42.
+    # 300, pp. 30--42.
 
     # Modified to allow for box-constraints by Richard Dennis.
 
@@ -443,7 +427,7 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
-    # 53, pp.771–794 
+    # 53, pp. 771--794 
 
     xk = copy(x)
     xn = similar(x)
@@ -479,7 +463,7 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
         Gk = Dk^(-1/2)
         gk = -Dk*jk'f(xk)
    
-        alphak = max(0.99995,1.0-norm(f(xk)))
+        alphak = max(theta,1.0-norm(f(xk)))
         pkn = -jk\f(xk)
         pkn = alphak*(box_projection(xk+pkn,l,u)-xk)
 
@@ -517,6 +501,84 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
  
 end
 
+function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
+    # Projected Newton-Krylov Methods", International Journal  for Numerical Methods in Engineering, 
+    # 110, pp. 661--674.
+
+    xk = copy(x)
+    xn = similar(x)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    g(x) = (1/2)*norm(f(x))^2
+
+    etak = 1e-4
+    beta = 0.9
+    t = 1e-4
+    sigma = 1e-4
+    mmax = 20
+
+    flag_ng = false
+    iter = 0
+    while true
+
+        if flag_ng == false
+            j = ForwardDiff.jacobian(f,xk)
+            residual_tol = etak*norm(xk)
+            dk,info = linsolve(j,-f(xk),tol=residual_tol)
+
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                    flag_ng = true
+                end
+            end
+        else
+            dk = - ForwardDiff.gradient(g,xk)
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if g(box_projection(xk+alpha*dk,l,u)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                end
+            end
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+
+        xk .= xn
+
+        iter += 1
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+
+    end
+  
+    results = SolverResults(:newton_krylov,x,xn,f(xn),lenx,lenf,iter)
+
+    return results
+ 
+end
+
+
 function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol = :lm_ar) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton
@@ -531,6 +593,8 @@ function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::
         return constrained_levenberg_marquardt_ar(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :dogleg
         return constrained_dogleg_solver(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :newton_krylov
+        return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
