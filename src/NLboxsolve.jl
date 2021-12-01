@@ -13,6 +13,7 @@ export constrained_newton,
        constrained_levenberg_marquardt_ar,
        constrained_dogleg_solver,
        constrained_newton_krylov,
+       constrained_newton_krylov_fs,
        nlboxsolve
 
 end

@@ -535,6 +535,7 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
             while m <= mmax
                 if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn = box_projection(xk+alpha*dk,l,u)
+                    etak = (1.0 - alpha*(1.0 - etak))
                     flag_ng = false
                     break
                 else
@@ -572,12 +573,95 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
 
     end
   
-    results = SolverResults(:newton_krylov,x,xn,f(xn),lenx,lenf,iter)
+    results = SolverResults(:nk,x,xn,f(xn),lenx,lenf,iter)
 
     return results
  
 end
 
+function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
+    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
+    # 149, pp. 771--782.
+
+    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
+
+    xk = copy(x)
+    xn = similar(x)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    g(x) = (1/2)*norm(f(x))^2
+
+    j = zeros(length(x),length(x))
+     
+    etak = 1e-4
+    beta = 0.9
+    t = 1e-4
+    sigma = 1e-4
+    mmax = 20
+
+    flag_ng = false
+    iter = 0
+    while true
+
+        if flag_ng == false
+            j .= ForwardDiff.jacobian(f,xk)
+            residual_tol = etak*norm(xk)
+            kk,info = linsolve(j,-(1/2)*f(xk),tol=residual_tol)
+            j .= ForwardDiff.jacobian(f,xk-kk) # Here xk-kk is not guaranteed to be inside the box
+            dk,info = linsolve(j,-f(xk),tol=residual_tol)
+
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    etak = (1.0 - alpha*(1.0 - etak))
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                    flag_ng = true
+                end
+            end
+        else
+            dk = - ForwardDiff.gradient(g,xk)
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if g(box_projection(xk+alpha*dk,l,u)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                end
+            end
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+
+        xk .= xn
+
+        iter += 1
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+
+    end
+  
+    results = SolverResults(:nk_fs,x,xn,f(xn),lenx,lenf,iter)
+
+    return results
+ 
+end
 
 function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol = :lm_ar) where {T <: AbstractFloat, S <: Integer}
 
@@ -593,8 +677,10 @@ function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::
         return constrained_levenberg_marquardt_ar(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :dogleg
         return constrained_dogleg_solver(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :newton_krylov
+    elseif method == :nk
         return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :nk_fs
+        return constrained_newton_krylov_fs(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end

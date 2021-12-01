@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for soving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains seven algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and one based on Krylov methods.
+So far the collection contains eight algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and two based on Newton-Krylov methods.
 
 Formulating a problem
 ---------------------
@@ -27,7 +27,7 @@ where ```xtol``` is the convergence tolerance applied to the solution point (def
 The solution algorithms
 -----------------------
 
-The solutions algorithms are the following:
+The solution algorithms are the following:
 
 - constrained Newton (method = :newton)
 - constrained Levenberg-Marquardt (method = :lm)
@@ -35,7 +35,8 @@ The solutions algorithms are the following:
 - Fan (2013) (method = :lm_fan)
 - Amini and Rostami (2016) (method = :lm_ar) (this is the default method)
 - Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg)
-- Chen and Vuik (2016) (method = :newton_krylov)
+- Chen and Vuik (2016) (method = :nk)
+- a constrained globalized Newton-Krylov method based on Frontini and Sormani (2004) (method = :nk_fs)
 
 Each algorithm returns the solution in a structure that has the following fields:
 
@@ -56,8 +57,10 @@ Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Met
 
 Bellavia, S., Macconi, M., and S. Pieraccinin, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", *Computational Optimization and Applications*, 53, pp. 771–794.
 
-Chen, J., and C Vuik, (2016), "Globalization Technique for Projected Newton-Krylov Methods", *International Journal for Numerical Methods in Engineering*, 110, pp.661–674. 
+Chen, J., and C. Vuik, (2016), "Globalization Technique for Projected Newton-Krylov Methods", *International Journal for Numerical Methods in Engineering*, 110, pp.661–674. 
 
 Fan, J., (2013), "On the Levenberg-Marquardt Methods for Convex Constrained Nonlinear Equations", *Journal of Industrial and Management Optimization*, 9, 1, pp. 227–241.
+
+Frontini, M., and E. Sormani, (2004), "Third-order Methods from Quadrature Formulae for Solving Systems of Nonlinear Equations", *Applied Mathematics and Computation*, 149, pp. 771–782.
 
 Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", *Journal of Computational and Applied Mathematics*, 172, pp. 375–397.
