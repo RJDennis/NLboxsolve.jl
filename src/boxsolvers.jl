@@ -50,7 +50,7 @@ function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1
     while true
 
         jk = ForwardDiff.jacobian(f,xk)
-        xn .= xk .- jk\f(xk)
+        xn .= xk - jk\f(xk)
   
         box_projection!(xn,l,u)
 
@@ -77,6 +77,7 @@ function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1}
 
     xk = copy(x)
     xn = similar(x)
+    dk = similar(x)
 
     lenx = zero(T)
     lenf = zero(T)
@@ -86,11 +87,9 @@ function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1}
     iter = 0
     while true
 
-        j = ForwardDiff.jacobian(f,xk)
-
-        du = -(j'j + muk*I)\(j'f(xk))
-
-        xn .= xk .+ du
+        j  = ForwardDiff.jacobian(f,xk)
+        dk .= -(j'j + muk*I)\(j'f(xk))
+        xn .= xk + dk
 
         box_projection!(xn,l,u)
 
@@ -123,6 +122,7 @@ function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{
 
     xk = copy(x)
     xn = similar(x)
+    dk = similar(x)
 
     lenx = zero(T)
     lenf = zero(T)
@@ -141,29 +141,27 @@ function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{
     while true
 
         j = ForwardDiff.jacobian(f,xk)
+        dk .= -(j'j + muk*I)\(j'f(xk))
+        xn .= box_projection(xk+dk,l,u)
 
-        du = -(j'j + muk*I)\(j'f(xk))
-
-        z = box_projection(xk+du,l,u)
-        s = z-xk
-
-        if norm(f(xk+du)) <= gamma*norm(f(xk))
-            xn .= xk .+ s
-        elseif (j's)[1] <= -rho*norm(s)^p
-            alpha = 1.0
-            while f(xk+alpha*s) > f(xk) + alpha*beta*j'*s
-                alpha = tau*alpha
-            end
-            xn .= xk .+ alpha*s
-        else
-            t = 1.0
-            while true
-                xt = box_projection(xk-t*j'*f(xk),l,u)
-                if f(xt) <= f(xk) .+ sigma*(f(xt)'*j*(xt-xk))[1]
-                    xn .=  xt
-                    break
-                else
-                    t = beta*t
+        if norm(f(xn)) > gamma*norm(f(xk))
+            g = ForwardDiff.gradient(m,xk)
+            if g's <= -rho*norm(s)^p
+                alpha = 1.0
+                while m(xk+alpha*s) > m(xk) + alpha*beta*g'*s
+                    alpha = beta*alpha
+                end
+                xn .= xk + alpha*s
+            else
+                alpha = 1.0
+                while true
+                    xt = box_projection(xk-alpha*g,l,u)
+                    if m(xt) <= m(xk) + sigma*(m(xt)*g'*(xt-xk))
+                        xn .=  xt
+                        break
+                    else
+                        alpha = beta*alpha
+                    end
                 end
             end
         end
@@ -196,6 +194,7 @@ function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},l::Array{
 
     xk = copy(x)
     xn = similar(x)
+    dk = similar(x)
 
     lenx = zero(T)
     lenf = zero(T)
@@ -210,20 +209,16 @@ function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},l::Array{
     while true
 
         muk = mu*norm(f(xk))^delta
+
         j = ForwardDiff.jacobian(f,xk)
+        dk .= -(j'j + muk*I)\(j'f(xk))
+        xn .= box_projection(xk+dk,l,u)
 
-        du = -(j'j + muk*I)\(j'f(xk))
-
-        z = box_projection(xk+du,l,u)
-        s = z-xk
-
-        if norm(f(xk+du)) <= gamma*norm(f(xk))
-            xn .= xk .+ s
-        else
+        if norm(f(xn)) > gamma*norm(f(xk))
             alpha = 1.0
             while true
                 xt = box_projection(xk-alpha*j'f(xk),l,u)
-                if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'*j*(xt-xk))[1]
+                if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'*j*(xt-xk))
                     xn .=  xt
                     break
                 else
@@ -351,20 +346,49 @@ function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Arr
 
 end
 
-function step_selection(f::Function,x::Array{T,1},Dk::Array{T,2},Gk::Array{T,2},jk::Array{T,2},gk::Array{T,1},pkn::Array{T,1},l::Array{T,1},u::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat, S <: Integer}
 
-    n = length(x)
+    df = j'*f(x)
 
-    lambda = zeros(n)
-    for i = 1:n
-        if gk[i] != 0.0
-            lambda[i] = max(((l[i] - x[i])/gk[i]),((u[i]-x[i])/gk[i]))
+    for i in eachindex(df)
+        if df[i] < 0.0 && u[i] < Inf
+            df[i] = u[i] - x[i]
+        elseif df[i] > 0.0 && l[i] > -Inf
+            df[i] = x[i] - l[i]
+        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
+            df[i] = min(x[i]-l[i],u[i]-x[i])
         else
-            lambda[i] = Inf
+            df[i] = 1.0
         end
     end
 
-    lambdak = minimum(lambda)
+    return Diagonal(df)
+
+end
+
+function step_selection(f::Function,x::Array{T,1},Dk::AbstractArray{T,2},Gk::AbstractArray{T,2},jk::Array{T,2},gk::Array{T,1},pkn::Array{T,1},l::Array{T,1},u::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+
+    #n = length(x)
+
+    lambdak = Inf
+    for i in eachindex(gk)
+        if gk[i] != 0.0
+            lambdak = min(max(((l[i] - x[i])/gk[i]),((u[i]-x[i])/gk[i])),lambdak)
+        else
+            lambdak = minimum((Inf,lambdak))
+        end
+    end
+
+    #lambda = zeros(n)
+    #for i = 1:n
+    #    if gk[i] != 0.0
+    #        lambda[i] = max(((l[i] - x[i])/gk[i]),((u[i]-x[i])/gk[i]))
+    #    else
+    #        lambda[i] = Inf
+    #    end
+    #end
+
+    #lambdak = minimum(lambda)
 
     taukprime = min(-(f(x)'*jk*gk)/norm(jk*gk)^2,deltak/norm(Gk*gk))
     
@@ -380,36 +404,35 @@ function step_selection(f::Function,x::Array{T,1},Dk::Array{T,2},Gk::Array{T,2},
     if norm(-pc_pkn) < 1e-13 # "division by zero errors can otherwise occur"
         return (pc+pkn)/2
     else
-        gammahat   = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
+        gammahat = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
         if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2) >= 0.0
-            gammaplus  = (pc'*Gk^2*(pc_pkn) + ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc_pkn))^2
-            gammaminus = (pc'*Gk^2*(pc_pkn) - ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2))/norm(Gk*(pc_pkn))^2
+            r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^(1/2)
+            gammaplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
+            gammaminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
         else
             gammaplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
             gammaminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
         end
 
         if gammahat > 1.0
-            #lambda = zeros(n)
-            for i = 1:n
+            gammatildaplus = Inf
+            for i in eachindex(pkn)
                 if (pkn[i]-pc[i]) != 0.0
-                    lambda[i] = max(((l[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((u[i] - x[i] - pc[i])/(pkn[i]-pc[i])))
+                    gammatildaplus = min(max(((l[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((u[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
                 else
-                    lambda[i] = Inf
+                    gammatildaplus = min(Inf,gammatildaplus)
                 end
             end
-            gammatildaplus = minimum(lambda)
             gamma = min(gammahat,gammaplus,theta*gammatildaplus)
         elseif gammahat < 0.0
-            #lambda = zeros(n)
-            for i = 1:n
+            gammatildaminus = -Inf
+            for i in eachindex(pkn)
                 if (-pkn[i]+pc[i]) != 0.0
-                    lambda[i] = max(((l[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),((u[i] - x[i] - pc[i])/(-(pkn[i]-pc[i]))))
+                    gammatildaminus = min(max(-((l[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((u[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
                 else
-                    lambda[i] = Inf
+                    gammatildaminus = min(Inf,gammatildaminus)
                 end
             end
-            gammatildaminus = -minimum(lambda)
             gamma = max(gammahat,gammaminus,theta*gammatildaminus)
         else
             gamma = gammahat
@@ -429,8 +452,10 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
     # 53, pp. 771--794 
 
-    xk = copy(x)
-    xn = similar(x)
+    xk  = copy(x)
+    xn  = similar(x)
+    pkn = similar(x)
+    p   = similar(x)
 
     lenx = zero(T)
     lenf = zero(T)
@@ -464,19 +489,18 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
         gk = -Dk*jk'f(xk)
    
         alphak = max(theta,1.0-norm(f(xk)))
-        pkn = -jk\f(xk)
-        pkn = alphak*(box_projection(xk+pkn,l,u)-xk)
+        pkn .= alphak*(box_projection(xk-jk\f(xk),l,u)-xk)
 
-        p = step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
     
         while true
             rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p = step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p = step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection(f,xk,Dk,Gk,jk,gk,pkn,l,u,deltak,theta)
             end
             xn .= xk .+ p
             break

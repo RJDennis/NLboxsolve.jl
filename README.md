@@ -7,6 +7,16 @@ NLboxsolve.jl is a package containing a small collection of algorithms for sovin
 
 So far the collection contains eight algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and two based on Newton-Krylov methods.
 
+Installing
+----------
+
+NLboxsolve.jl is a registered package that can be installed using the package manager.  To do so, type the following in the REPL:
+
+```julia
+using Pkg
+Pkg.add("NLboxsolve")
+```
+
 Formulating a problem
 ---------------------
 
