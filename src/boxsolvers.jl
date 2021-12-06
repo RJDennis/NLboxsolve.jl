@@ -687,6 +687,81 @@ function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u:
  
 end
 
+function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    # This function is in progress.  It is my implementaion of a Jacobian-free Newton-Krylov solver
+
+    xk = copy(x)
+    xn = similar(x)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    g(x) = (1/2)*norm(f(x))^2
+
+    etak = 1e-4
+    beta = 0.9
+    t = 1e-4
+    sigma = 1e-4
+    mmax = 20
+
+    flag_ng = false
+    iter = 0
+    while true
+
+        if flag_ng == false
+            residual_tol = etak
+            dk = jacobian_free_gmres(f,xk,residual_tol,20)
+
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    etak = (1.0 - alpha*(1.0 - etak))
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                    flag_ng = true
+                end
+            end
+        else
+            dk = - ForwardDiff.gradient(g,xk)
+            alpha = 1.0
+            m = 1
+            while m <= mmax
+                if g(box_projection(xk+alpha*dk,l,u)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
+                    xn = box_projection(xk+alpha*dk,l,u)
+                    flag_ng = false
+                    break
+                else
+                    alpha = beta*alpha
+                    m += 1
+                end
+            end
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+
+        xk .= xn
+
+        iter += 1
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+
+    end
+  
+    results = SolverResults(:jfnk,x,xn,f(xn),lenx,lenf,iter)
+
+    return results
+ 
+end
+
 function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol = :lm_ar) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton
@@ -705,6 +780,8 @@ function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::
         return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :nk_fs
         return constrained_newton_krylov_fs(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :jfnk
+        return constrained_jacobian_free_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end

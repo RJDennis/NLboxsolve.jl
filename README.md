@@ -3,9 +3,9 @@
 Introduction
 ------------
 
-NLboxsolve.jl is a package containing a small collection of algorithms for soving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
+NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains eight algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and two based on Newton-Krylov methods.
+So far the collection contains nine algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.
 
 Installing
 ----------
@@ -47,6 +47,7 @@ The solution algorithms are the following:
 - Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg)
 - Chen and Vuik (2016) (method = :nk)
 - a constrained globalized Newton-Krylov method based on Frontini and Sormani (2004) (method = :nk_fs)
+- Jacobian-free Newton Krylov (method = :jfnk)
 
 Each algorithm returns the solution in a structure that has the following fields:
 

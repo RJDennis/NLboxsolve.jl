@@ -33,6 +33,7 @@ function test_nlboxsolve()
     soln_dogleg = constrained_dogleg_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_nk     = constrained_newton_krylov(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_nk_fs  = constrained_newton_krylov_fs(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
+    soln_jfnk   = constrained_jacobian_free_newton_krylov(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
 
     soln1 = nlboxsolve(gershwin,x0,l,u,method = :dogleg,xtol=1e-15,ftol=1e-15)
     soln2 = nlboxsolve(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
@@ -45,8 +46,9 @@ function test_nlboxsolve()
     test_six   = maximum(abs,soln_dogleg.zero - soln2.zero) < 1e-14
     test_seven = maximum(abs,soln_nk.zero     - soln2.zero) < 1e-14
     test_eight = maximum(abs,soln_nk_fs.zero  - soln2.zero) < 1e-14
+    test_nine  = maximum(abs,soln_jfnk.zero   - soln2.zero) < 1e-14
 
-    return test_one, test_two, test_three, test_four, test_five, test_six, test_seven, test_eight
+    return test_one, test_two, test_three, test_four, test_five, test_six, test_seven, test_eight, test_nine
 
 end
 
