@@ -444,14 +444,14 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     
     for i in eachindex(x)
         if l[i] == -Inf
-            l[i] = -1/eps()
+            l[i] = -1/eps(T)
         elseif l[i] == Inf
-            l[i] = 1/eps()
+            l[i] = 1/eps(T)
         end
         if u[i] == -Inf
-            u[i] = -1/eps()
+            u[i] = -1/eps(T)
         elseif u[i] == Inf
-            u[i] = 1/eps()
+            u[i] = 1/eps(T)
         end
     end
     
