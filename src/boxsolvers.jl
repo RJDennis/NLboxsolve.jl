@@ -323,7 +323,7 @@ function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},l::Array{T
   
 end
 
-function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat, S <: Integer}
+function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
 
     n = length(x)
     D = zeros(n,n)
@@ -343,26 +343,6 @@ function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Arr
     end
 
     return D
-
-end
-
-function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat, S <: Integer}
-
-    df = j'*f(x)
-
-    for i in eachindex(df)
-        if df[i] < 0.0 && u[i] < Inf
-            df[i] = u[i] - x[i]
-        elseif df[i] > 0.0 && l[i] > -Inf
-            df[i] = x[i] - l[i]
-        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
-            df[i] = min(x[i]-l[i],u[i]-x[i])
-        else
-            df[i] = 1.0
-        end
-    end
-
-    return Diagonal(df)
 
 end
 
