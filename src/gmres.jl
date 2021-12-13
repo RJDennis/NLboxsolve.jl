@@ -1,16 +1,15 @@
 function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1}) where {T <: AbstractFloat} # Exact GMRES
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(a,b)
+    q, h, c = arnoldi(a,b)
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = zeros(T,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -24,16 +23,15 @@ end
 function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1},forcing_term::T) where {T <: AbstractFloat} # Inexact GMRES
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(a,b,forcing_term*norm(b))
+    q, h, c = arnoldi(a,b,forcing_term*norm(b))
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = Array{T}(undef,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -44,38 +42,45 @@ function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1}
 
 end
 
-function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1},forcing_term::T,m_max::S) where {T <: AbstractFloat, S <: Integer} # Restarted inexact GMRES
+function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1},forcing_term::T,m::S) where {T <: AbstractFloat, S <: Integer} # Restarted inexact GMRES
 
     x = copy(x)
     n = length(x)
-    
-    m = min(n,m_max)
 
-    while true
+    m = min(m,n)
+    
+    step = Array{T}(undef,n)
+
+    g = Array{T}(undef,2,2)
+
+    loop_max = ceil(Int,n/m)
+    loop_count = 1
+    while loop_count <= loop_max 
 
         # Create Hessenberg form using Arnoldi iteration
-        q, h = arnoldi(a,b,forcing_term*norm(b),m)
+        q, h, c = arnoldi(a,b,forcing_term*norm(b),m)
     
-        c = size(h,1)
-
         e1    = zeros(c)
         e1[1] = norm(b)
 
         # Use Givens rotations to transform to upper-triangular form
-        for i = 2:c
-            g = givens(h[i-1:i,i-1])
+        @views for i = 2:c
+            givens!(g,h[i-1:i,i-1])
             h[i-1:i,:] = g'h[i-1:i,:]
             e1[i-1:i] = g'e1[i-1:i]
         end
 
-        step = q*(h\e1)
+        step .= q*(h\e1)
 
         if maximum(abs,a*step-b) < forcing_term*norm(b)
-            return step
+            return step, true
         else
             x .= x + step
         end
+        loop_count += 1
     end
+
+    return step, false
 
 end
 
@@ -86,16 +91,15 @@ function gmres(f::Function,x::Array{T,1}) where {T <: AbstractFloat} # Exact GMR
     b = -f(x)
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(a,b)
+    q, h, c = arnoldi(a,b)
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = Array{T}(undef,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -113,16 +117,15 @@ function gmres(f::Function,x::Array{T,1},forcing_term::T) where {T <: AbstractFl
     b = -f(x)
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(a,b,forcing_term*norm(b))
+    q, h, c = arnoldi(a,b,forcing_term*norm(b))
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = Array{T}(undef,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -133,41 +136,51 @@ function gmres(f::Function,x::Array{T,1},forcing_term::T) where {T <: AbstractFl
 
 end
 
-function gmres(f::Function,x::Array{T,1},forcing_term::T,m_max::S) where {T <: AbstractFloat, S <: Integer} # Restarted inexact GMRES
+function gmres(f::Function,x::Array{T,1},forcing_term::T,m::S) where {T <: AbstractFloat, S <: Integer} # Restarted inexact GMRES
 
     x = copy(x)
     n = length(x)
-    
-    m = min(n,m_max)
 
-    while true
+    step = similar(x)
 
-        a = ForwardDiff.jacobian(f,x)
-        b = -f(x)
+    m = min(m,n)
+
+    j = Array{T}(undef,n,n)
+    b = Array{T}(undef,n)
+
+    g = Array{T}(undef,2,2)
+
+    loop_max = ceil(Int,n/m)
+    loop_count = 1
+    while loop_count <= loop_max 
+
+        j .= ForwardDiff.jacobian(f,x)
+        b .= -f(x)
 
         # Create Hessenberg form using Arnoldi iteration
-        q, h = arnoldi(a,b,forcing_term*norm(b),m)
+        q, h, c = arnoldi(j,b,forcing_term*norm(b),m)
     
-        c = size(h,1)
-
         e1    = zeros(c)
         e1[1] = norm(b)
 
         # Use Givens rotations to transform to upper-triangular form
-        for i = 2:c
-            g = givens(h[i-1:i,i-1])
+        @views for i = 2:c
+            givens!(g,h[i-1:i,i-1])
             h[i-1:i,:] = g'h[i-1:i,:]
             e1[i-1:i] = g'e1[i-1:i]
         end
 
-        step = q*(h\e1)
+        step .= q*(h\e1)
 
-        if maximum(abs,a*step-b) < forcing_term*norm(b)
-            return step
+        if maximum(abs,j*step-b) < forcing_term*norm(b)
+            return step, true
         else
             x .= x + step
         end
+        loop_count +=1
     end
+
+    return step, false
 
 end
 
@@ -176,16 +189,15 @@ function jacobian_free_gmres(f::Function,x::Array{T,1}) where {T <: AbstractFloa
     b = -f(x)
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(f,x,b)
+    q, h, c = arnoldi(f,x,b)
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = Array{T}(undef,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -201,16 +213,15 @@ function jacobian_free_gmres(f::Function,x::Array{T,1},forcing_term::T) where {T
     b = -f(x)
 
     # Create Hessenberg form using Arnoldi iteration
-    q, h = arnoldi(f,x,b,forcing_term*norm(b))
+    q, h, c = arnoldi(f,x,b,forcing_term*norm(b))
     
-    c = size(h,1)
-
     e1    = zeros(c)
     e1[1] = norm(b)
 
+    g = Array{T}(undef,2,2)
     # Use Givens rotations to transform to upper-triangular form
-    for i = 2:c
-        g = givens(h[i-1:i,i-1])
+    @views for i = 2:c
+        givens!(g,h[i-1:i,i-1])
         h[i-1:i,:] = g'h[i-1:i,:]
         e1[i-1:i] = g'e1[i-1:i]
     end
@@ -221,42 +232,50 @@ function jacobian_free_gmres(f::Function,x::Array{T,1},forcing_term::T) where {T
 
 end
 
-function jacobian_free_gmres(f::Function,x::Array{T,1},forcing_term::T,m_max::S) where {T <: AbstractFloat, S <: Integer} # Jacobian-free restarted inexact GMRES
+function jacobian_free_gmres(f::Function,x::Array{T,1},forcing_term::T,m::S) where {T <: AbstractFloat, S <: Integer} # Jacobian-free restarted inexact GMRES
 
     x = copy(x)
     n = length(x)
     jvec = zeros(n)
+    step = similar(x)
 
-    m = min(n,m_max)
+    m = min(m,n)
 
-    while true
+    b = Array{T}(undef,n)
 
-        b = -f(x)
+    g = Array{T}(undef,2,2)
+    
+    loop_max = ceil(Int,n/m)
+    loop_count = 1
+    while loop_count <= loop_max 
+
+        b .= -f(x)
 
         # Create Hessenberg form using Arnoldi iteration
-        q, h = arnoldi(f,x,b,forcing_term*norm(b),m)
+        q, h, c = arnoldi(f,x,b,forcing_term*norm(b),m)
     
-        c = size(h,1)
-
         e1    = zeros(c)
         e1[1] = norm(b)
 
         # Use Givens rotations to transform to upper-triangular form
-        for i = 2:c
-            g = givens(h[i-1:i,i-1])
+        @views for i = 2:c
+            givens!(g,h[i-1:i,i-1])
             h[i-1:i,:] = g'h[i-1:i,:]
             e1[i-1:i] = g'*e1[i-1:i]
         end
 
-        step = q*(h\e1)
+        step .= q*(h\e1)
 
         jacvec!(f,x,step,jvec)
 
         if maximum(abs,jvec-b) < forcing_term*norm(b)
-            return step
+            return step, true
         else
             x .= x + step
         end
+        loop_count += 1
     end
+
+    return step, false
 
 end

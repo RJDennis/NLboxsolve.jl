@@ -42,6 +42,7 @@ function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1
 
     xk = copy(x)
     xn = similar(x)
+    jk = zeros(length(x),length(x))
 
     lenx = zero(T)
     lenf = zero(T)
@@ -49,7 +50,7 @@ function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1
     iter = 1
     while true
 
-        jk = ForwardDiff.jacobian(f,xk)
+        jk .= ForwardDiff.jacobian(f,xk)
         xn .= xk - jk\f(xk)
   
         box_projection!(xn,l,u)
@@ -87,7 +88,7 @@ function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1}
     iter = 0
     while true
 
-        j  = ForwardDiff.jacobian(f,xk)
+        j   = ForwardDiff.jacobian(f,xk)
         dk .= -(j'j + muk*I)\(j'f(xk))
         xn .= xk + dk
 
@@ -140,18 +141,18 @@ function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{
     iter = 0
     while true
 
-        j = ForwardDiff.jacobian(f,xk)
+        j   = ForwardDiff.jacobian(f,xk)
         dk .= -(j'j + muk*I)\(j'f(xk))
         xn .= box_projection(xk+dk,l,u)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             g = ForwardDiff.gradient(m,xk)
-            if g's <= -rho*norm(s)^p
+            if g'dk <= -rho*norm(dk)^p
                 alpha = 1.0
-                while m(xk+alpha*s) > m(xk) + alpha*beta*g'*s
+                while m(xk+alpha*dk) > m(xk) + alpha*beta*g'*dk
                     alpha = beta*alpha
                 end
-                xn .= xk + alpha*s
+                xn .= xk + alpha*dk
             else
                 alpha = 1.0
                 while true
@@ -210,7 +211,7 @@ function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},l::Array{
 
         muk = mu*norm(f(xk))^delta
 
-        j = ForwardDiff.jacobian(f,xk)
+        j   = ForwardDiff.jacobian(f,xk)
         dk .= -(j'j + muk*I)\(j'f(xk))
         xn .= box_projection(xk+dk,l,u)
 
@@ -346,6 +347,30 @@ function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Arr
 
 end
 
+#=
+
+function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+
+    df = j'*f(x)
+
+    for i in eachindex(df)
+        if df[i] < 0.0 && u[i] < Inf
+            df[i] = u[i] - x[i]
+        elseif df[i] > 0.0 && l[i] > -Inf
+            df[i] = x[i] - l[i]
+        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
+            df[i] = min(x[i]-l[i],u[i]-x[i])
+        else
+            df[i] = 1.0
+        end
+    end
+
+    return Diagonal(df)
+
+end
+
+=#
+
 function step_selection(f::Function,x::Array{T,1},Dk::AbstractArray{T,2},Gk::AbstractArray{T,2},jk::Array{T,2},gk::Array{T,1},pkn::Array{T,1},l::Array{T,1},u::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
 
     #n = length(x)
@@ -437,6 +462,11 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     pkn = similar(x)
     p   = similar(x)
 
+    jk = zeros(length(x),length(x))
+    Dk = zeros(length(x),length(x))
+    Gk = zeros(length(x),length(x))
+    gk = similar(x)
+
     lenx = zero(T)
     lenf = zero(T)
 
@@ -444,14 +474,14 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     
     for i in eachindex(x)
         if l[i] == -Inf
-            l[i] = -1/eps(T)
+            l[i] = -1/eps()
         elseif l[i] == Inf
-            l[i] = 1/eps(T)
+            l[i] = 1/eps()
         end
         if u[i] == -Inf
-            u[i] = -1/eps(T)
+            u[i] = -1/eps()
         elseif u[i] == Inf
-            u[i] = 1/eps(T)
+            u[i] = 1/eps()
         end
     end
     
@@ -463,10 +493,10 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     iter = 0
     while true
 
-        jk = ForwardDiff.jacobian(f,xk)
-        Dk = coleman_li(f,jk,xk,l,u)
-        Gk = Dk^(-1/2)
-        gk = -Dk*jk'f(xk)
+        jk .= ForwardDiff.jacobian(f,xk)
+        Dk .= coleman_li(f,jk,xk,l,u)
+        Gk .= Dk^(-1/2)
+        gk .= -Dk*jk'f(xk)
    
         alphak = max(theta,1.0-norm(f(xk)))
         pkn .= alphak*(box_projection(xk-jk\f(xk),l,u)-xk)
@@ -505,7 +535,7 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
  
 end
 
-function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal  for Numerical Methods in Engineering, 
@@ -513,6 +543,9 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
 
     xk = copy(x)
     xn = similar(x)
+    dk = similar(x)
+
+    j = zeros(length(x),length(x))
 
     lenx = zero(T)
     lenf = zero(T)
@@ -523,22 +556,23 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
     beta = 0.9
     t = 1e-4
     sigma = 1e-4
-    mmax = 20
+    mmax = 50
 
     flag_ng = false
     iter = 0
     while true
 
         if flag_ng == false
-            j = ForwardDiff.jacobian(f,xk)
+            j  .= ForwardDiff.jacobian(f,xk)
+            #dk .= gmres(j,-f(xk),xk,etak,krylovdim)
             residual_tol = etak*norm(xk)
-            dk,info = linsolve(j,-f(xk),tol=residual_tol)
+            dk,info = linsolve(j,-f(xk),tol=residual_tol,krylovdim=krylovdim)
 
             alpha = 1.0
             m = 1
             while m <= mmax
                 if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn = box_projection(xk+alpha*dk,l,u)
+                    xn .= box_projection(xk+alpha*dk,l,u)
                     etak = (1.0 - alpha*(1.0 - etak))
                     flag_ng = false
                     break
@@ -549,12 +583,12 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
                 end
             end
         else
-            dk = - ForwardDiff.gradient(g,xk)
+            dk .= -ForwardDiff.gradient(g,xk)
             alpha = 1.0
             m = 1
             while m <= mmax
                 if g(box_projection(xk+alpha*dk,l,u)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
-                    xn = box_projection(xk+alpha*dk,l,u)
+                    xn .= box_projection(xk+alpha*dk,l,u)
                     flag_ng = false
                     break
                 else
@@ -583,7 +617,7 @@ function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Ar
  
 end
 
-function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -605,18 +639,24 @@ function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u:
     beta = 0.9
     t = 1e-4
     sigma = 1e-4
-    mmax = 20
+    mmax = 50
 
     flag_ng = false
     iter = 0
     while true
 
         if flag_ng == false
+
             j .= ForwardDiff.jacobian(f,xk)
             residual_tol = etak*norm(xk)
-            kk,info = linsolve(j,-(1/2)*f(xk),tol=residual_tol)
+            kk,info = linsolve(j,-(1/2)*f(xk),tol=residual_tol,krylovdim=krylovdim)
             j .= ForwardDiff.jacobian(f,xk-kk) # Here xk-kk is not guaranteed to be inside the box
-            dk,info = linsolve(j,-f(xk),tol=residual_tol)
+            dk,info = linsolve(j,-f(xk),tol=residual_tol,krylovdim=krylovdim)
+
+            #j .= ForwardDiff.jacobian(f,xk)
+            #kk = gmres(j,-(1/2)*f(xk),xk,etak,krylovdim)
+            #j .= ForwardDiff.jacobian(f,xk-kk) # Here xk-kk is not guaranteed to be inside the box
+            #dk = gmres(j,-f(xk),xk,etak,krylovdim)
 
             alpha = 1.0
             m = 1
@@ -633,7 +673,7 @@ function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u:
                 end
             end
         else
-            dk = - ForwardDiff.gradient(g,xk)
+            dk = -ForwardDiff.gradient(g,xk)
             alpha = 1.0
             m = 1
             while m <= mmax
@@ -667,12 +707,13 @@ function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u:
  
 end
 
-function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    # This function is in progress.  It is my implementaion of a Jacobian-free Newton-Krylov solver
+    # This function is my implementation of a constrained Jacobian-free Newton-Krylov solver
 
     xk = copy(x)
     xn = similar(x)
+    dk = similar(x)
 
     lenx = zero(T)
     lenf = zero(T)
@@ -683,15 +724,18 @@ function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Ar
     beta = 0.9
     t = 1e-4
     sigma = 1e-4
-    mmax = 20
+    mmax = 50
 
     flag_ng = false
     iter = 0
     while true
 
         if flag_ng == false
-            residual_tol = etak
-            dk = jacobian_free_gmres(f,xk,residual_tol,20)
+            dk, status = jacobian_free_gmres(f,xk,etak,krylovdim) # Using inexact Arnoldi (could use restarted)
+
+            if status == false
+                error("Restarted GMRES did not converge")
+            end
 
             alpha = 1.0
             m = 1
@@ -742,7 +786,7 @@ function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Ar
  
 end
 
-function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol = :lm_ar) where {T <: AbstractFloat, S <: Integer}
+function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol = :lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton
         return constrained_newton(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -757,11 +801,11 @@ function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::
     elseif method == :dogleg
         return constrained_dogleg_solver(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :nk
-        return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     elseif method == :nk_fs
-        return constrained_newton_krylov_fs(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_krylov_fs(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     elseif method == :jfnk
-        return constrained_jacobian_free_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_jacobian_free_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
