@@ -22,7 +22,7 @@ function test_nlboxsolve()
     l = [-Inf,-Inf,-Inf,-Inf]
     u = [Inf,Inf,Inf,Inf]
 
-    soln_newotn = constrained_newton(test2,x0,l,u,ftol=1e-15,xtol=1e-15)
+    soln_newton = constrained_newton(test2,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm     = constrained_levenberg_marquardt(test2,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_kyf = constrained_levenberg_marquardt_kyf(test2,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_fan = constrained_levenberg_marquardt_fan(test2,x0,l,u,ftol=1e-15,xtol=1e-15)
