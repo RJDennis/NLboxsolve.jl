@@ -20,19 +20,19 @@ Pkg.add("NLboxsolve")
 Formulating a problem
 ---------------------
 
-The key elements to a problem are a function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```l``` (1d-array), and upper, ```u``` (1d-array) bounds that form the box-constraint.  With these defined, we solve the system using:
+The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```l``` (1d-array), and upper, ```u``` (1d-array) bounds that form the box-constraint.  With these defined, we solve the system using:
 
 ```julia
 soln = nlboxsolve(F,x,l,u)
 ```
 
-Of course there are optional arguments.  The general function call allows up to four keyword arguments:
+Of course there are optional arguments.  The general function call allows up to five keyword arguments, for example:
 
 ```julia
-soln = nlboxsolve(F,x,l,u,xtol,ftol,maxiters,method)
+soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,maxiters=200,method=:jfnk,krylovdim=20)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), and ```method``` specifies the algorithm used (default = :lm_ar).
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), and ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods).
 
 The solution algorithms
 -----------------------
