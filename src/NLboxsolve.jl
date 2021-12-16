@@ -1,6 +1,6 @@
 module NLboxsolve
 
-using ForwardDiff, LinearAlgebra, KrylovKit
+using ForwardDiff, LinearAlgebra, SparseArrays
 
 include("givens.jl")
 include("arnoldi.jl")
