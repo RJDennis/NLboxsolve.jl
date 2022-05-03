@@ -26,13 +26,13 @@ The key elements to a problem are a vector-function containing the system of equ
 soln = nlboxsolve(F,x,l,u)
 ```
 
-Of course there are optional arguments.  The general function call allows up to six keyword arguments, for example:
+Of course there are optional arguments.  The general function call allows up to seven keyword arguments, for example:
 
 ```julia
-soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,maxiters=200,method=:jfnk,sparse=:yes,krylovdim=20)
+soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,maxiters=200,method=:jfnk,sparsejac=:yes,krylovdim=20,inplace=:no)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods).
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods), and ```inplace``` (default = :no) specifies whether the function takes a preallocated residual vector or not.
 
 The solution algorithms
 -----------------------
@@ -66,7 +66,7 @@ References
 
 Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Method with a New Line Search for Systems of Nonlinear Equations", *Journal of Computational and Applied Mathematics*, 300, pp. 30–42.
 
-Bellavia, S., Macconi, M., and S. Pieraccinin, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", *Computational Optimization and Applications*, 53, pp. 771–794.
+Bellavia, S., Macconi, M., and S. Pieraccini, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", *Computational Optimization and Applications*, 53, pp. 771–794.
 
 Chen, J., and C. Vuik, (2016), "Globalization Technique for Projected Newton-Krylov Methods", *International Journal for Numerical Methods in Engineering*, 110, pp.661–674. 
 
