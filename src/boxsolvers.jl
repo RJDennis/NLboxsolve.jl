@@ -1,3 +1,43 @@
+struct SolverResults
+
+    solution_method::Symbol
+    initial::Array{Float64,1}
+    zero::Array{Float64,1}
+    fzero::Array{Float64,1}
+    xdist::Float64
+    fdist::Float64
+    iters::Integer
+
+end
+
+function box_projection(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+
+    y = copy(x)
+
+    for i in eachindex(x)
+        if y[i] < l[i]
+            y[i] = l[i]
+        elseif y[i] > u[i]
+            y[i] = u[i]
+        end
+    end
+
+    return y
+
+end
+
+function box_projection!(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+
+    for i in eachindex(x)
+        if x[i] < l[i]
+            x[i] = l[i]
+        elseif x[i] > u[i]
+            x[i] = u[i]
+        end
+    end
+
+end
+
 function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,inplace::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if inplace == :no
