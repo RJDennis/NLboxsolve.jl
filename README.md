@@ -26,13 +26,21 @@ The key elements to a problem are a vector-function containing the system of equ
 soln = nlboxsolve(F,x,l,u)
 ```
 
-Of course there are optional arguments.  The general function call allows up to seven keyword arguments, for example:
+A Jacobian function can also be provided:
 
 ```julia
-soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,maxiters=200,method=:jfnk,sparsejac=:yes,krylovdim=20,inplace=:no)
+soln = nlboxsolve(F,J,x,l,u)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods), and ```inplace``` (default = :no) specifies whether the function takes a preallocated residual vector or not.
+The function, ```F(x)``` and the Jacobian function, ``` J(x)``` can be in-place, meaning that they can take as their first argument a preallocated array.
+
+Of course there are optional arguments.  The general function call allows up to six keyword arguments, for example:
+
+```julia
+soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,maxiters=200,method=:jfnk,sparsejac=:yes,krylovdim=20)
+```
+
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```maxiters``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods).
 
 The solution algorithms
 -----------------------
@@ -59,7 +67,7 @@ Each algorithm returns the solution in a structure that has the following fields
 - fdist
 - iters
 
-which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies the problem is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
+which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
 
 References
 ----------
