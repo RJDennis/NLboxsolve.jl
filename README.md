@@ -32,7 +32,7 @@ A Jacobian function can also be provided:
 soln = nlboxsolve(F,J,x,l,u)
 ```
 
-The function, ```F(x)``` and the Jacobian function, ``` J(x)``` can be in-place, meaning that they can take as their first argument a preallocated array.
+The function, ```F``` and the Jacobian function, ``` J``` can be in-place, meaning that they can take as their first argument a preallocated array.
 
 Of course there are optional arguments.  The general function call allows up to six keyword arguments, for example:
 
