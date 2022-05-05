@@ -81,10 +81,12 @@ function fivediagonal(x)
 
     f[1]     = 4.0*(x[1] - x[2]^2) + x[2] - x[3]^2
     f[2]     = 8.0*x[2]*(x[2]^2 - x[1]) - 2.0*(1.0 - x[2]) + 4.0*(x[2] - x[3]^2) + x[3] - x[4]^2
-    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) + x[end-2]^2 - x[end-3]
+    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) 
+             + x[end-2]^2 - x[end-3]
     f[end]   = 8.0*x[end]*(x[end]^2 - x[end-1]) - 2*(1.0 - x[end]) + x[end-1]^2 - x[end-2]    
     for i = 3:length(x)-2
-        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 - x[i-2] + x[i+1] - x[i+2]^2
+        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 
+             - x[i-2] + x[i+1] - x[i+2]^2
     end
 
     return f
@@ -95,10 +97,12 @@ function fivediagonal!(f,x)
 
     f[1]     = 4.0*(x[1] - x[2]^2) + x[2] - x[3]^2
     f[2]     = 8.0*x[2]*(x[2]^2 - x[1]) - 2.0*(1.0 - x[2]) + 4.0*(x[2] - x[3]^2) + x[3] - x[4]^2
-    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) + x[end-2]^2 - x[end-3]
+    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) 
+             + x[end-2]^2 - x[end-3]
     f[end]   = 8.0*x[end]*(x[end]^2 - x[end-1]) - 2*(1.0 - x[end]) + x[end-1]^2 - x[end-2]    
     for i = 3:length(x)-2
-        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 - x[i-2] + x[i+1] - x[i+2]^2
+        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 
+            - x[i-2] + x[i+1] - x[i+2]^2
     end
 
 end
@@ -109,7 +113,7 @@ soln_a = nlboxsolve(fivediagonal,x0,xtol=1e-15,ftol=1e-15,krylovdim=80,method=:j
 soln_b = nlboxsolve(fivediagonal!,x0,xtol=1e-15,ftol=1e-15,krylovdim=80,method=:jfnk)
 ```
 
-Now consider the samller problem:
+Now consider the smaller problem:
 
 ```julia
 function example(x)
@@ -140,7 +144,7 @@ u  = [0.5,0.4]
 soln_c = nlboxsolve(example,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
-To obtain a second solution we can use:
+To obtain a second solution:
 
 ```julia
 x0 = [0.8, 0.6]
