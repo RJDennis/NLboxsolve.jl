@@ -4396,7 +4396,7 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
  
 end
 
-function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
+function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1} = [-Inf for _ in eachindex(x)],u::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton && sparsejac == :no
         return constrained_newton(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -4436,7 +4436,7 @@ function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::
 
 end
 
-function nlboxsolve(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function nlboxsolve(f::Function,j::Function,x::Array{T,1},l::Array{T,1} = [-Inf for _ in eachindex(x)],u::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton
         return constrained_newton(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)

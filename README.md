@@ -20,7 +20,7 @@ Pkg.add("NLboxsolve")
 Formulating a problem
 ---------------------
 
-The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```l``` (1d-array), and upper, ```u``` (1d-array) bounds that form the box-constraint.  With these defined, we solve the system using:
+The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```l``` (1d-array with default enteries equaling -Inf), and upper, ```u``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these defined, we solve the system using:
 
 ```julia
 soln = nlboxsolve(F,x,l,u)
@@ -68,6 +68,142 @@ Each algorithm returns the solution in a structure that has the following fields
 - iters
 
 which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
+
+Examples
+--------
+
+As a first example, consider the following fivediagonal function:
+
+```julia
+function fivediagonal(x)
+
+    f = similar(x)
+
+    f[1]     = 4.0*(x[1] - x[2]^2) + x[2] - x[3]^2
+    f[2]     = 8.0*x[2]*(x[2]^2 - x[1]) - 2.0*(1.0 - x[2]) + 4.0*(x[2] - x[3]^2) + x[3] - x[4]^2
+    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) + x[end-2]^2 - x[end-3]
+    f[end]   = 8.0*x[end]*(x[end]^2 - x[end-1]) - 2*(1.0 - x[end]) + x[end-1]^2 - x[end-2]    
+    for i = 3:length(x)-2
+        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 - x[i-2] + x[i+1] - x[i+2]^2
+    end
+
+    return f
+
+end
+
+function fivediagonal!(f,x)
+
+    f[1]     = 4.0*(x[1] - x[2]^2) + x[2] - x[3]^2
+    f[2]     = 8.0*x[2]*(x[2]^2 - x[1]) - 2.0*(1.0 - x[2]) + 4.0*(x[2] - x[3]^2) + x[3] - x[4]^2
+    f[end-1] = 8.0*x[end-1]*(x[end-1]^2 - x[end-2]) - 2.0*(1.0 - x[end-1]) + 4.0*(x[end-1] - x[end]^2) + x[end-2]^2 - x[end-3]
+    f[end]   = 8.0*x[end]*(x[end]^2 - x[end-1]) - 2*(1.0 - x[end]) + x[end-1]^2 - x[end-2]    
+    for i = 3:length(x)-2
+        f[i] = 8.0*x[i]*(x[i]^2 - x[i-1]) - 2.0*(1.0 - x[i]) + 4.0*(x[i] - x[i+1]^2) + x[i-1]^2 - x[i-2] + x[i+1] - x[i+2]^2
+    end
+
+end
+
+n = 5000
+x0 = [2.0 for _ in 1:n]
+soln_a = nlboxsolve(fivediagonal,x0,xtol=1e-15,ftol=1e-15,krylovdim=80,method=:jfnk)
+soln_b = nlboxsolve(fivediagonal!,x0,xtol=1e-15,ftol=1e-15,krylovdim=80,method=:jfnk)
+```
+
+Now consider the samller problem:
+
+```julia
+function example(x)
+
+    f = similar(x)
+
+    f[1] = x[1]^2 + x[2]^2 - x[1]
+    f[2] = x[1]^2 - x[2]^2 - x[2]
+
+    return f
+
+end
+
+function example!(f,x)
+
+    f[1] = x[1]^2 + x[2]^2 - x[1]
+    f[2] = x[1]^2 - x[2]^2 - x[2]
+
+end
+```
+
+To obtain one solution we can use:
+
+```julia
+x0 = [-0.6, 0.5]
+l  = [-0.5,-0.2]
+u  = [0.5,0.4]
+soln_c = nlboxsolve(example,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
+```
+
+To obtain a second solution we can use:
+
+```julia
+x0 = [0.8, 0.6]
+l  = [0.5,0.0]
+u  = [1.0,1.0]
+soln_d = nlboxsolve(example!,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
+```
+
+As a final example---one involving the use of the user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
+
+```julia
+function f(x)
+
+    F = similar(x)
+
+    F[1] = (x[1]+3)*(x[2]^3-7)+18
+    F[2] = sin(x[2]*exp(x[1])-1)
+
+    return F
+
+end
+
+function j(x)
+
+    J = zeros(Number,2,2)
+
+    J[1, 1] = x[2]^3-7
+    J[1, 2] = 3*x[2]^2*(x[1]+3)
+    u = exp(x[1])*cos(x[2]*exp(x[1])-1)
+    J[2, 1] = x[2]*u
+    J[2, 2] = u
+
+    return J
+
+end
+
+function f!(F, x)
+    F[1] = (x[1]+3)*(x[2]^3-7)+18
+    F[2] = sin(x[2]*exp(x[1])-1)
+end
+
+function j!(J, x)
+    J[1, 1] = x[2]^3-7
+    J[1, 2] = 3*x[2]^2*(x[1]+3)
+    u = exp(x[1])*cos(x[2]*exp(x[1])-1)
+    J[2, 1] = x[2]*u
+    J[2, 2] = u
+end
+
+x0 = [0.1,1.2]
+l  = [0.0, 0.0]
+u  = [5.0, 5.0]
+soln_e = nlboxsolve(f,j,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_f = nlboxsolve(f,j!,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_g = nlboxsolve(f!,j,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_h = nlboxsolve(f!,j!,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
+```
+
+Related packages
+----------------
+
+- NLsolve.jl
+- Complementarity.jl
 
 References
 ----------
