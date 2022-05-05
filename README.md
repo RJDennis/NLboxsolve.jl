@@ -153,7 +153,7 @@ u  = [1.0,1.0]
 soln_d = nlboxsolve(example!,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
-As a final example---one involving the use of the user defined Jacobian---, consider the problem borrowed from the package https://github.com/JuliaNLSolvers/NLsolve.jl:
+As a final example---one involving the use of the user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
 
 ```julia
 function f(x)
@@ -206,8 +206,8 @@ soln_h = nlboxsolve(f!,j!,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
 Related packages
 ----------------
 
-- https://github.com/JuliaNLSolvers/NLsolve.jl
-- https://github.com/chkwon/Complementarity.jl
+- NLsolve.jl
+- Complementarity.jl
 
 References
 ----------
