@@ -351,7 +351,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},lb::
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -398,7 +398,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},lb::A
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -462,7 +462,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Arr
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -517,7 +517,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Arra
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -574,7 +574,7 @@ function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -621,7 +621,7 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
 
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -689,7 +689,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
         jk .= ForwardDiff.jacobian(f,xk)
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             g .= jk'f(xk)
@@ -703,7 +703,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
                         break
@@ -770,7 +770,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
@@ -790,7 +790,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     f(ffn,xt)
                     if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
@@ -875,7 +875,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
 
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             g .= jk'f(xk)
@@ -889,7 +889,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
                         break
@@ -964,7 +964,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
         f(ffk,xk)
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
@@ -984,7 +984,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     f(ffn,xt)
                     if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
@@ -1062,7 +1062,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             g .= jk'f(xk)
@@ -1076,7 +1076,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
                         break
@@ -1143,7 +1143,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk + dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
@@ -1163,7 +1163,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
                 alpha = 1.0
                 while true
                     xt .= xk-alpha*g
-                    box_projection!(xt,l,u)
+                    box_projection!(xt,lb,ub)
                     f(ffn,xt)
                     if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
                         xn .=  xt
@@ -1239,13 +1239,13 @@ function constrained_levenberg_marquardt_fan_outplace(f::Function,x::Array{T,1},
         jk .= ForwardDiff.jacobian(f,xk)
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
                     xn .= xt
                     break
@@ -1307,14 +1307,14 @@ function constrained_levenberg_marquardt_fan_inplace(f::Function,x::Array{T,1},l
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'ffk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
                     xn .= xt
@@ -1394,13 +1394,13 @@ function constrained_levenberg_marquardt_fan_outplace(f::Function,j::Function,x:
 
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
                     xn .= xt
                     break
@@ -1469,14 +1469,14 @@ function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::
 
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'ffk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
                     xn .= xt
@@ -1549,13 +1549,13 @@ function constrained_levenberg_marquardt_fan_sparse_outplace(f::Function,x::Arra
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         dk .= -(jk'jk + muk*I)\(jk'f(xk))
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         if norm(f(xn)) > gamma*norm(f(xk))
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
                     xn .= xt
                     break
@@ -1617,14 +1617,14 @@ function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         dk .= -(jk'jk + muk*I)\(jk'ffk)
         xn .= xk+dk
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         f(ffn,xn)
         if norm(ffn) > gamma*norm(ffk)
             alpha = 1.0
             while true
                 xt .= xk-alpha*jk'ffk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
                     xn .= xt
@@ -1706,7 +1706,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         if norm(f(z)) <= rho*norm(f(xk))
@@ -1715,7 +1715,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
             if f(xk)'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -1794,7 +1794,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         f(ffn,z)
@@ -1804,7 +1804,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
             if ffk'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -1900,7 +1900,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         if norm(f(z)) <= rho*norm(f(xk))
@@ -1909,7 +1909,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
             if f(xk)'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -1996,7 +1996,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         f(ffn,z)
@@ -2006,7 +2006,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
             if ffk'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -2095,7 +2095,7 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         if norm(f(z)) <= rho*norm(f(xk))
@@ -2104,7 +2104,7 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
             if f(xk)'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -2183,7 +2183,7 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
         dk = d1k+d2k+d3k
 
         z .= xk+dk
-        box_projection!(z,l,u)
+        box_projection!(z,lb,ub)
         s .= z-xk
 
         f(ffn,z)
@@ -2193,7 +2193,7 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
             if ffk'jk*dk > -gamma
                 dk = d1k
                 z .= xk+dk
-                box_projection!(z,l,u)
+                box_projection!(z,lb,ub)
                 s .= z-xk
             end
             alpha = 1.0
@@ -2308,7 +2308,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
 
     taukprime = min(-(f(x)'*jk*gk)/norm(jk*gk)^2,deltak/norm(Gk*gk))
     tauk = taukprime
-    if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,l,u))
+    if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
         tauk = theta*lambdak
     end
 
@@ -2378,7 +2378,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
     taukprime = min(-(ff'*jk*gk)/norm(jk*gk)^2,deltak/norm(Gk*gk))
 
     tauk = taukprime
-    if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,l,u))
+    if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
         tauk = theta*lambdak
     end
 
@@ -2487,13 +2487,13 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
     while true
 
         jk .= ForwardDiff.jacobian(f,xk)
-        df .= coleman_li_outplace(f,jk,xk,l,u)
+        df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
         alphak = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -2577,13 +2577,13 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
     while true
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
-        df .= coleman_li_inplace(f,jk,xk,l,u)
+        df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
         alphak = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -2686,13 +2686,13 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
             j(jk,xk)
         end
 
-        df .= coleman_li_outplace(f,jk,xk,l,u)
+        df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
         alphak = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -2784,13 +2784,13 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
         end
 
         f(ffk,xk)
-        df .= coleman_li_inplace(f,jk,xk,l,u)
+        df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
         alphak = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -2886,13 +2886,13 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
     while true
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
-        df .= coleman_li_outplace(f,jk,xk,l,u)
+        df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'f(xk)
    
         alphak = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -2976,13 +2976,13 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
     while true
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-        df .= coleman_li_inplace(f,jk,xk,l,u)
+        df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'ffk
    
         alphak = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
-        box_projection!(pkn,l,u)
+        box_projection!(pkn,lb,ub)
         pkn .= alphak*(pkn-xk)
 
         p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
@@ -3070,7 +3070,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -3088,7 +3088,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -3156,7 +3156,7 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -3175,7 +3175,7 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <=  (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -3264,7 +3264,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -3282,7 +3282,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -3358,7 +3358,7 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -3377,7 +3377,7 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <=  (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -3459,7 +3459,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -3477,7 +3477,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -3545,7 +3545,7 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -3564,7 +3564,7 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <=  (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -3651,7 +3651,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},lb::Arr
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -3669,7 +3669,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},lb::Arr
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -3742,7 +3742,7 @@ function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},lb::Arra
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -3761,7 +3761,7 @@ function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},lb::Arra
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <= (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -3861,7 +3861,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -3879,7 +3879,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -3967,7 +3967,7 @@ function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -3986,7 +3986,7 @@ function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <= (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -4073,7 +4073,7 @@ function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
                     xn .= xt
                     etak = (1.0 - alpha*(1.0 - etak))
@@ -4091,7 +4091,7 @@ function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
@@ -4164,7 +4164,7 @@ function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},l
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
                     xn .= xt
@@ -4183,7 +4183,7 @@ function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},l
             m = 1
             while m <= mmax
                 xt .= xk+alpha*dk
-                box_projection!(xt,l,u)
+                box_projection!(xt,lb,ub)
                 f(ffn,xt)
                 if (1/2)*norm(ffn)^2 <= (1/2)*norm(ffk)^2 + sigma*dk'*(xt - xk)
                     xn .= xt
@@ -4262,8 +4262,8 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
             alpha = 1.0
             m = 1
             while m <= mmax
-                if norm(f(box_projection(xk+alpha*dk,l,u))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn = box_projection(xk+alpha*dk,l,u)
+                if norm(f(box_projection(xk+alpha*dk,lb,ub))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                    xn = box_projection(xk+alpha*dk,lb,ub)
                     etak = (1.0 - alpha*(1.0 - etak))
                     flag_ng = false
                     break
@@ -4278,8 +4278,8 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
             alpha = 1.0
             m = 1
             while m <= mmax
-                if g(box_projection(xk+alpha*dk,l,u)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
-                    xn = box_projection(xk+alpha*dk,l,u)
+                if g(box_projection(xk+alpha*dk,lb,ub)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,lb,ub) .- xk)
+                    xn = box_projection(xk+alpha*dk,lb,ub)
                     flag_ng = false
                     break
                 else
@@ -4346,9 +4346,9 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
             m = 1
             while m <= mmax
                 f(ffk,xk)
-                f(ffn,box_projection(xk+alpha*dk,l,u))
+                f(ffn,box_projection(xk+alpha*dk,lb,ub))
                 if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
-                    xn = box_projection(xk+alpha*dk,l,u)
+                    xn = box_projection(xk+alpha*dk,lb,ub)
                     etak = (1.0 - alpha*(1.0 - etak))
                     flag_ng = false
                     break
@@ -4363,9 +4363,9 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
             alpha = 1.0
             m = 1
             while m <= mmax
-                f(ffn,box_projection(xk+alpha*dk,l,u))
-                if (1/2)*norm(ffn)^2 <= (1/2)*norm(ffk) + sigma*dk'*(box_projection(xk+alpha*dk,l,u) .- xk)
-                    xn = box_projection(xk+alpha*dk,l,u)
+                f(ffn,box_projection(xk+alpha*dk,lb,ub))
+                if (1/2)*norm(ffn)^2 <= (1/2)*norm(ffk) + sigma*dk'*(box_projection(xk+alpha*dk,lb,ub) .- xk)
+                    xn = box_projection(xk+alpha*dk,lb,ub)
                     flag_ng = false
                     break
                 else
