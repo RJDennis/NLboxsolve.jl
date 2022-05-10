@@ -2276,7 +2276,7 @@ end
 
 function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
-    ff = Array{T,1}(undef,length(l))
+    ff = Array{T,1}(undef,length(x))
 
     f(ff,x)
     df = j'ff
@@ -2363,7 +2363,7 @@ end
 
 function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
 
-    ff = Array{T,1}(undef,length(l))
+    ff = Array{T,1}(undef,length(x))
 
     lambdak = Inf
     for i in eachindex(gk)
