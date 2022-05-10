@@ -2241,12 +2241,12 @@ function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},lb::Array{T,1},ub::A
     df = j'*f(x)
 
     for i = 1:n
-        if df[i] < 0.0 && u[i] < Inf
-            D[i,i] = u[i] - x[i]
-        elseif df[i] > 0.0 && l[i] > -Inf
-            D[i,i] = x[i] - l[i]
-        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
-            D[i,i] = min(x[i]-l[i],u[i]-x[i])
+        if df[i] < 0.0 && ub[i] < Inf
+            D[i,i] = ub[i] - x[i]
+        elseif df[i] > 0.0 && lb[i] > -Inf
+            D[i,i] = x[i] - lb[i]
+        elseif df[i] == 0.0 && (lb[i] > -Inf || ub[i] < Inf)
+            D[i,i] = min(x[i]-lb[i],ub[i]-x[i])
         else
             D[i,i] = 1.0
         end
@@ -2261,12 +2261,12 @@ function coleman_li_outplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb:
     df = j'f(x)
 
     for i in eachindex(df)
-        if df[i] < 0.0 && u[i] < Inf
-            df[i] = u[i] - x[i]
-        elseif df[i] > 0.0 && l[i] > -Inf
-            df[i] = x[i] - l[i]
-        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
-            df[i] = min(x[i]-l[i],u[i]-x[i])
+        if df[i] < 0.0 && ub[i] < Inf
+            df[i] = ub[i] - x[i]
+        elseif df[i] > 0.0 && lb[i] > -Inf
+            df[i] = x[i] - lb[i]
+        elseif df[i] == 0.0 && (lb[i] > -Inf || ub[i] < Inf)
+            df[i] = min(x[i]-lb[i],ub[i]-x[i])
         else
             df[i] = 1.0
         end
@@ -2282,12 +2282,12 @@ function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::
     df = j'ff
 
     for i in eachindex(df)
-        if df[i] < 0.0 && u[i] < Inf
-            df[i] = u[i] - x[i]
-        elseif df[i] > 0.0 && l[i] > -Inf
-            df[i] = x[i] - l[i]
-        elseif df[i] == 0.0 && (l[i] > -Inf || u[i] < Inf)
-            df[i] = min(x[i]-l[i],u[i]-x[i])
+        if df[i] < 0.0 && ub[i] < Inf
+            df[i] = ub[i] - x[i]
+        elseif df[i] > 0.0 && lb[i] > -Inf
+            df[i] = x[i] - lb[i]
+        elseif df[i] == 0.0 && (lb[i] > -Inf || ub[i] < Inf)
+            df[i] = min(x[i]-lb[i],ub[i]-x[i])
         else
             df[i] = 1.0
         end
@@ -2300,7 +2300,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
     lambdak = Inf
     for i in eachindex(gk)
         if gk[i] != 0.0
-            lambdak = min(max(((l[i] - x[i])/gk[i]),((u[i]-x[i])/gk[i])),lambdak)
+            lambdak = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),lambdak)
         else
             lambdak = minimum((Inf,lambdak))
         end
@@ -2333,7 +2333,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
             gammatildaplus = Inf
             for i in eachindex(pkn)
                 if (pkn[i]-pc[i]) != 0.0
-                    gammatildaplus = min(max(((l[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((u[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
+                    gammatildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
                 else
                     gammatildaplus = min(Inf,gammatildaplus)
                 end
@@ -2343,7 +2343,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
             gammatildaminus = -Inf
             for i in eachindex(pkn)
                 if (-pkn[i]+pc[i]) != 0.0
-                    gammatildaminus = min(max(-((l[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((u[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
+                    gammatildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
                 else
                     gammatildaminus = min(Inf,gammatildaminus)
                 end
@@ -2368,7 +2368,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
     lambdak = Inf
     for i in eachindex(gk)
         if gk[i] != 0.0
-            lambdak = min(max(((l[i] - x[i])/gk[i]),((u[i]-x[i])/gk[i])),lambdak)
+            lambdak = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),lambdak)
         else
             lambdak = minimum((Inf,lambdak))
         end
@@ -2403,7 +2403,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
             gammatildaplus = Inf
             for i in eachindex(pkn)
                 if (pkn[i]-pc[i]) != 0.0
-                    gammatildaplus = min(max(((l[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((u[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
+                    gammatildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
                 else
                     gammatildaplus = min(Inf,gammatildaplus)
                 end
@@ -2413,7 +2413,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
             gammatildaminus = -Inf
             for i in eachindex(pkn)
                 if (-pkn[i]+pc[i]) != 0.0
-                    gammatildaminus = min(max(-((l[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((u[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
+                    gammatildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
                 else
                     gammatildaminus = min(Inf,gammatildaminus)
                 end
