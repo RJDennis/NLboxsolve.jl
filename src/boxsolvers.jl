@@ -4451,7 +4451,7 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
     else
         error("Your chosen solution method is not supported")
     end
-,,
+
 end
 
 function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
