@@ -2466,15 +2466,15 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
@@ -2553,15 +2553,15 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
@@ -2660,15 +2660,15 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
@@ -2754,15 +2754,15 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
@@ -2865,15 +2865,15 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
@@ -2952,15 +2952,15 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
     # Replace infinities with largest possible Float64
     
     for i in eachindex(x)
-        if l[i] == -Inf
-            l[i] = -1/eps(T)
-        elseif l[i] == Inf
-            l[i] = 1/eps(T)
+        if lb[i] == -Inf
+            lb[i] = -1/eps(T)
+        elseif lb[i] == Inf
+            lb[i] = 1/eps(T)
         end
-        if u[i] == -Inf
-            u[i] = -1/eps(T)
-        elseif u[i] == Inf
-            u[i] = 1/eps(T)
+        if ub[i] == -Inf
+            ub[i] = -1/eps(T)
+        elseif ub[i] == Inf
+            ub[i] = 1/eps(T)
         end
     end
     
