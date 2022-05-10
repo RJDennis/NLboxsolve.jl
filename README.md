@@ -3,7 +3,7 @@
 Introduction
 ------------
 
-NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` l <= x <= u```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
+NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
 So far the collection contains nine algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.
 
@@ -20,16 +20,16 @@ Pkg.add("NLboxsolve")
 Formulating a problem
 ---------------------
 
-The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```l``` (1d-array with default enteries equaling -Inf), and upper, ```u``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these defined, we solve the system using:
+The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these defined, we solve the system using:
 
 ```julia
-soln = nlboxsolve(F,x,l,u)
+soln = nlboxsolve(F,x,lb,ub)
 ```
 
 A Jacobian function can also be provided:
 
 ```julia
-soln = nlboxsolve(F,J,x,l,u)
+soln = nlboxsolve(F,J,x,lb,ub)
 ```
 
 The function, ```F``` and the Jacobian function, ``` J``` can be in-place, meaning that they can take as their first argument a preallocated array.
@@ -139,18 +139,18 @@ To obtain one solution we can use:
 
 ```julia
 x0 = [-0.6, 0.5]
-l  = [-0.5,-0.2]
-u  = [0.5,0.4]
-soln_c = nlboxsolve(example,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
+lb = [-0.5, -0.2]
+ub = [0.5, 0.4]
+soln_c = nlboxsolve(example,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
 To obtain a second solution:
 
 ```julia
 x0 = [0.8, 0.6]
-l  = [0.5,0.0]
-u  = [1.0,1.0]
-soln_d = nlboxsolve(example!,x0,l,u,ftol=1e-15,xtol=1e-15,method=:lm)
+lb = [0.5, 0.0]
+ub = [1.0, 1.0]
+soln_d = nlboxsolve(example!,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
 As a final example---one involving the use of the user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
@@ -194,13 +194,13 @@ function j!(J, x)
     J[2, 2] = u
 end
 
-x0 = [0.1,1.2]
-l  = [0.0, 0.0]
-u  = [5.0, 5.0]
-soln_e = nlboxsolve(f,j,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_f = nlboxsolve(f,j!,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_g = nlboxsolve(f!,j,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_h = nlboxsolve(f!,j!,x0,l,u,xtol=1e-15,ftol=1e-15,method=:newton)
+x0 = [0.1, 1.2]
+lb = [0.0, 0.0]
+ub = [5.0, 5.0]
+soln_e = nlboxsolve(f,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_f = nlboxsolve(f,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_g = nlboxsolve(f!,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
 ```
 
 Related packages

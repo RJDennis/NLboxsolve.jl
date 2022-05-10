@@ -10,15 +10,15 @@ struct SolverResults
 
 end
 
-function box_projection(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+function box_projection(x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     y = copy(x)
 
     for i in eachindex(x)
-        if y[i] < l[i]
-            y[i] = l[i]
-        elseif y[i] > u[i]
-            y[i] = u[i]
+        if y[i] < lb[i]
+            y[i] = lb[i]
+        elseif y[i] > ub[i]
+            y[i] = ub[i]
         end
     end
 
@@ -26,13 +26,13 @@ function box_projection(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: A
 
 end
 
-function box_projection!(x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+function box_projection!(x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     for i in eachindex(x)
-        if x[i] < l[i]
-            x[i] = l[i]
-        elseif x[i] > u[i]
-            x[i] = u[i]
+        if x[i] < lb[i]
+            x[i] = lb[i]
+        elseif x[i] > ub[i]
+            x[i] = ub[i]
         end
     end
 
@@ -40,19 +40,19 @@ end
 
 ################ Solvers ###################
 
-function constrained_newton(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_newton_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_newton_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -68,7 +68,7 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::
         jk .= ForwardDiff.jacobian(f,xk)
         xn .= xk - jk\f(xk)
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -89,7 +89,7 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::
   
 end
 
-function constrained_newton_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -107,7 +107,7 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::A
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         xn .= xk - jk\ffk
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
@@ -128,19 +128,19 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::A
   
 end
 
-function constrained_newton(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_newton_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     j_inplace = !applicable(j,x)
 
@@ -163,7 +163,7 @@ function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},l::Ar
 
         xn .= xk - jk\f(xk)
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -184,7 +184,7 @@ function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},l::Ar
   
 end
 
-function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     j_inplace = !applicable(j,x)
 
@@ -210,7 +210,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},l::Arr
         f(ffk,xk)
         xn .= xk - jk\ffk
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
@@ -231,19 +231,19 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},l::Arr
   
 end
 
-function constrained_newton_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_newton_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_newton_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -259,7 +259,7 @@ function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},l::Array{T
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         xn .= xk - jk\f(xk)
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -280,7 +280,7 @@ function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},l::Array{T
   
 end
 
-function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -298,7 +298,7 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         xn .= xk - jk\ffk
   
-        box_projection!(xn,l,u)
+        box_projection!(xn,lb,ub)
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
@@ -319,19 +319,19 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,
   
 end
 
-function constrained_levenberg_marquardt(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -374,7 +374,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},l::A
    
 end
 
-function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -423,19 +423,19 @@ function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},l::Ar
    
 end
 
-function constrained_levenberg_marquardt(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     j_inplace = !applicable(j,x)
 
@@ -485,7 +485,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Arr
    
 end
 
-function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     j_inplace = !applicable(j,x)
 
@@ -542,19 +542,19 @@ function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Arra
    
 end
 
-function constrained_levenberg_marquardt_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -597,7 +597,7 @@ function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,
    
 end
 
-function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     n = length(x)
     xk = copy(x)
@@ -646,19 +646,19 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
    
 end
 
-function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_kyf_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_kyf_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -735,7 +735,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
    
 end
 
-function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -825,19 +825,19 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
    
 end
 
-function constrained_levenberg_marquardt_kyf(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_kyf_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_kyf_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -921,7 +921,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
    
 end
 
-function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -1019,19 +1019,19 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
    
 end
 
-function constrained_levenberg_marquardt_kyf_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_kyf_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_kyf_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_kyf_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -1108,7 +1108,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
    
 end
 
-function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 3.12 from Kanzow, Yamashita, and Fukushima (2004) "Levenberg-Marquardt methods
     # with strong local convergence properties for solving nonlinear equations with convex constraints", Journal of 
@@ -1198,19 +1198,19 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
    
 end
 
-function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_fan_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_fan_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_fan_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1274,7 +1274,7 @@ function constrained_levenberg_marquardt_fan_outplace(f::Function,x::Array{T,1},
  
 end
 
-function constrained_levenberg_marquardt_fan_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1346,19 +1346,19 @@ function constrained_levenberg_marquardt_fan_inplace(f::Function,x::Array{T,1},l
  
 end
 
-function constrained_levenberg_marquardt_fan(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_fan_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_fan_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_fan_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1429,7 +1429,7 @@ function constrained_levenberg_marquardt_fan_outplace(f::Function,j::Function,x:
  
 end
 
-function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1508,19 +1508,19 @@ function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::
  
 end
 
-function constrained_levenberg_marquardt_fan_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_fan_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_fan_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_fan_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_fan_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1584,7 +1584,7 @@ function constrained_levenberg_marquardt_fan_sparse_outplace(f::Function,x::Arra
  
 end
 
-function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
@@ -1656,19 +1656,19 @@ function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array
  
 end
 
-function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_ar_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_ar_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -1751,7 +1751,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
   
 end
 
-function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -1843,19 +1843,19 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},l:
   
 end
 
-function constrained_levenberg_marquardt_ar(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_ar_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_ar_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -1945,7 +1945,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
   
 end
 
-function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -2045,19 +2045,19 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
   
 end
 
-function constrained_levenberg_marquardt_ar_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_levenberg_marquardt_ar_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_levenberg_marquardt_ar_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_levenberg_marquardt_ar_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -2140,7 +2140,7 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
   
 end
 
-function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 2.1 from Amini and Rostami (2016), "Three-steps modified Levenberg-Marquardt 
     # method with a new line search for systems of nonlinear equations", Journal of Computational and Applied Mathematics, 
@@ -2233,7 +2233,7 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
 end
 
 #=
-function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     n = length(x)
     D = zeros(n,n)
@@ -2256,7 +2256,7 @@ function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},l::Array{T,1},u::Arr
 
 end
 =#
-function coleman_li_outplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+function coleman_li_outplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     df = j'f(x)
 
@@ -2274,7 +2274,7 @@ function coleman_li_outplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},l::
     return df
 end
 
-function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},l::Array{T,1},u::Array{T,1}) where {T <: AbstractFloat}
+function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     ff = Array{T,1}(undef,length(l))
 
@@ -2295,7 +2295,7 @@ function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},l::A
     return df
 end
 
-function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},l::Array{T,1},u::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
 
     lambdak = Inf
     for i in eachindex(gk)
@@ -2361,7 +2361,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
 
 end
 
-function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},l::Array{T,1},u::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
 
     ff = Array{T,1}(undef,length(l))
 
@@ -2431,19 +2431,19 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
 
 end
 
-function constrained_dogleg_solver(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_dogleg_solver_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2496,16 +2496,16 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},l::Array{T
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -2530,7 +2530,7 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},l::Array{T
  
 end
 
-function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2586,17 +2586,17 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},l::Array{T,
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             f(ffn,xk+p)
             rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -2623,19 +2623,19 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},l::Array{T,
  
 end
 
-function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_dogleg_solver_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2695,16 +2695,16 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -2729,7 +2729,7 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
  
 end
 
-function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2793,17 +2793,17 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             f(ffn,xk+p)
             rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -2830,19 +2830,19 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
  
 end
 
-function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_dogleg_solver_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_solver_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2895,16 +2895,16 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},l::
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -2929,7 +2929,7 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},l::
  
 end
 
-function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -2985,17 +2985,17 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},l::A
         box_projection!(pkn,l,u)
         pkn .= alphak*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
     
         while true
             f(ffn,xk+p)
             rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
             if rhof < beta1 # linear approximation is poor fit so reduce the trust region
                 deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             elseif rhof > beta2 # linear approximation is good fit so expand the trust region
                 deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,l,u,deltak,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
             end
             xn .= xk .+ p
             break
@@ -3022,19 +3022,19 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},l::A
  
 end
 
-function constrained_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal for Numerical Methods in Engineering, 
@@ -3119,7 +3119,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},l::Array{T
  
 end
 
-function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal for Numerical Methods in Engineering, 
@@ -3209,19 +3209,19 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},l::Array{T,
  
 end
 
-function constrained_newton_krylov(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal for Numerical Methods in Engineering, 
@@ -3313,7 +3313,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
  
 end
 
-function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal for Numerical Methods in Engineering, 
@@ -3411,19 +3411,19 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
  
 end
 
-function constrained_newton_krylov_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal  for Numerical Methods in Engineering, 
@@ -3508,7 +3508,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},l::
  
 end
 
-function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of Algorithm 1 from Chen and Vuik (2016) "Globalization Technique for 
     # Projected Newton-Krylov Methods", International Journal  for Numerical Methods in Engineering, 
@@ -3598,19 +3598,19 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},l::A
  
 end
 
-function constrained_newton_krylov_fs(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_fs_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_fs_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -3700,7 +3700,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},l::Arra
  
 end
 
-function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -3795,19 +3795,19 @@ function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},l::Array
  
 end
 
-function constrained_newton_krylov_fs(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_fs_outplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_fs_inplace(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -3910,7 +3910,7 @@ function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{
  
 end
 
-function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -4020,19 +4020,19 @@ function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T
  
 end
 
-function constrained_newton_krylov_fs_sparse(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_newton_krylov_fs_sparse_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_newton_krylov_fs_sparse_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_newton_krylov_fs_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -4122,7 +4122,7 @@ function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},
  
 end
 
-function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
     # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
@@ -4217,19 +4217,19 @@ function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},l
  
 end
 
-function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     f_inplace = !applicable(f,x)
 
     if f_inplace == false
-        return constrained_jacobian_free_newton_krylov_outplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_jacobian_free_newton_krylov_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
-        return constrained_jacobian_free_newton_krylov_inplace(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        return constrained_jacobian_free_newton_krylov_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     end
 
 end
 
-function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This function is my implementation of a constrained Jacobian-free Newton-Krylov solver
 
@@ -4308,7 +4308,7 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
  
 end
 
-function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,1},l::Array{T,1},u::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     # This function is my implementation of a constrained Jacobian-free Newton-Krylov solver
 
@@ -4396,64 +4396,84 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
  
 end
 
-function nlboxsolve(f::Function,x::Array{T,1},l::Array{T,1} = [-Inf for _ in eachindex(x)],u::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
-
-    if method == :newton && sparsejac == :no
-        return constrained_newton(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm && sparsejac == :no
-        return constrained_levenberg_marquardt(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_kyf && sparsejac == :no
-        return constrained_levenberg_marquardt_kyf(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_fan && sparsejac == :no
-        return constrained_levenberg_marquardt_fan(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_ar && sparsejac == :no
-        return constrained_levenberg_marquardt_ar(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :dogleg && sparsejac == :no
-        return constrained_dogleg_solver(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :nk && sparsejac == :no
-        return constrained_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    elseif method == :nk_fs && sparsejac == :no
-        return constrained_newton_krylov_fs(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    elseif method == :newton && sparsejac == :yes
-        return constrained_newton_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm && sparsejac == :yes
-        return constrained_levenberg_marquardt_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_kyf && sparsejac == :yes
-        return constrained_levenberg_marquardt_kyf_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_fan && sparsejac == :yes
-        return constrained_levenberg_marquardt_fan_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_ar && sparsejac == :yes
-        return constrained_levenberg_marquardt_ar_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :dogleg && sparsejac == :yes
-        return constrained_dogleg_solver_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :nk && sparsejac == :yes
-        return constrained_newton_krylov_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    elseif method == :nk_fs && sparsejac == :yes
-        return constrained_newton_krylov_fs_sparse(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    elseif method == :jfnk
-        return constrained_jacobian_free_newton_krylov(f,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function nlboxsolve(f::Function,j::Function,x::Array{T,1},l::Array{T,1} = [-Inf for _ in eachindex(x)],u::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if method == :newton
-        return constrained_newton(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        if sparsejac == :no
+            return constrained_newton(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_newton_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :lm
-        return constrained_levenberg_marquardt(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        if sparsejac == :no
+            return constrained_levenberg_marquardt(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_levenberg_marquardt_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :lm_kyf
-        return constrained_levenberg_marquardt_kyf(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        if sparsejac == :no
+            return constrained_levenberg_marquardt_kyf(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_levenberg_marquardt_kyf_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :lm_fan
-        return constrained_levenberg_marquardt_fan(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        if sparsejac == :no
+            return constrained_levenberg_marquardt_fan(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_levenberg_marquardt_fan_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :lm_ar
-        return constrained_levenberg_marquardt_ar(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        if sparsejac == :no
+            return constrained_levenberg_marquardt_ar(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejav == :yes
+            return constrained_levenberg_marquardt_ar_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :dogleg
-        return constrained_dogleg_solver(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :nk &&
-        return constrained_newton_krylov(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        if sparsejac == :no
+            return constrained_dogleg_solver(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_dogleg_solver_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
+    elseif method == :nk
+        if sparsejac == :no
+            return constrained_newton_krylov(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        elseif sparsejac == :yes
+            return constrained_newton_krylov_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        end
     elseif method == :nk_fs
-        return constrained_newton_krylov_fs(f,j,x,l,u,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        if sparsejac == :no
+            return constrained_newton_krylov_fs(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        elseif sparsejac == :yes
+            return constrained_newton_krylov_fs_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+        end
+    elseif method == :jfnk
+        return constrained_jacobian_free_newton_krylov(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        error("Your chosen solution method is not supported")
+    end
+,,
+end
+
+function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,method::Symbol=:lm_ar,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
+
+    if method == :newton
+        return constrained_newton(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :lm
+        return constrained_levenberg_marquardt(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :lm_kyf
+        return constrained_levenberg_marquardt_kyf(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :lm_fan
+        return constrained_levenberg_marquardt_fan(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :lm_ar
+        return constrained_levenberg_marquardt_ar(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :dogleg
+        return constrained_dogleg_solver(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :nk &&
+        return constrained_newton_krylov(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+    elseif method == :nk_fs
+        return constrained_newton_krylov_fs(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
+    else
+        error("Your chosen solution method is not supported")
     end
 
 end
