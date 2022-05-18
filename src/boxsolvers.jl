@@ -38,11 +38,35 @@ function box_projection!(x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <
 
 end
 
+function box_check(lb::Array{T,1},ub::Array{T,1}) where {T<:AbstractFloat}
+
+    if length(lb) != length(ub)
+        error(" 'lb' and 'ub' must have the same length")
+    end
+
+    satisfied = true
+    for i in eachindex(lb)
+        if ub[i] <= lb[i]
+            satisfied = false
+            break
+        end
+    end
+
+    return satisfied
+
+end
+
 ################ Solvers ###################
 
 function constrained_newton(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -130,7 +154,13 @@ end
 
 function constrained_newton(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -233,7 +263,13 @@ end
 
 function constrained_newton_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -321,7 +357,13 @@ end
 
 function constrained_levenberg_marquardt(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -425,7 +467,13 @@ end
 
 function constrained_levenberg_marquardt(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -544,7 +592,13 @@ end
 
 function constrained_levenberg_marquardt_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -648,7 +702,13 @@ end
 
 function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_kyf_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -827,7 +887,13 @@ end
 
 function constrained_levenberg_marquardt_kyf(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_kyf_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1021,7 +1087,13 @@ end
 
 function constrained_levenberg_marquardt_kyf_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_kyf_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1200,7 +1272,13 @@ end
 
 function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_fan_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1348,7 +1426,13 @@ end
 
 function constrained_levenberg_marquardt_fan(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_fan_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1510,7 +1594,13 @@ end
 
 function constrained_levenberg_marquardt_fan_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_fan_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1658,7 +1748,13 @@ end
 
 function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_ar_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -1845,7 +1941,13 @@ end
 
 function constrained_levenberg_marquardt_ar(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_ar_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -2047,7 +2149,13 @@ end
 
 function constrained_levenberg_marquardt_ar_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_levenberg_marquardt_ar_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -2433,7 +2541,13 @@ end
 
 function constrained_dogleg_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_dogleg_solver_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -2625,7 +2739,13 @@ end
 
 function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_dogleg_solver_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -2832,7 +2952,13 @@ end
 
 function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_dogleg_solver_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -3024,7 +3150,13 @@ end
 
 function constrained_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -3211,7 +3343,13 @@ end
 
 function constrained_newton_krylov(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -3413,7 +3551,13 @@ end
 
 function constrained_newton_krylov_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -3600,7 +3744,13 @@ end
 
 function constrained_newton_krylov_fs(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_fs_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -3797,7 +3947,13 @@ end
 
 function constrained_newton_krylov_fs(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_fs_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -4022,7 +4178,13 @@ end
 
 function constrained_newton_krylov_fs_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_newton_krylov_fs_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -4219,7 +4381,13 @@ end
 
 function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
-    f_inplace = !applicable(f,x)
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    box_projection!(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
         return constrained_jacobian_free_newton_krylov_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -4242,11 +4410,11 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
 
     g(x) = (1/2)*norm(f(x))^2
 
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
+    etak  = 1e-4
+    beta  = 0.9
+    t     = 1e-4
     sigma = 1e-4
-    mmax = 50
+    mmax  = 50
 
     flag_ng = false
     iter = 0
@@ -4322,11 +4490,11 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
 
     g(x) = (1/2)*norm(f(x))^2
 
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
+    etak  = 1e-4
+    beta  = 0.9
+    t     = 1e-4
     sigma = 1e-4
-    mmax = 50
+    mmax  = 50
 
     ffk = Array{T,1}(undef,n)
     ffn = Array{T,1}(undef,n)

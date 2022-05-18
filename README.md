@@ -3,7 +3,7 @@
 Introduction
 ------------
 
-NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub```, where it is assumed that the box-constraint admits a solution. This problem is similar, but different to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
+NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
 So far the collection contains nine algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.
 
@@ -20,7 +20,7 @@ Pkg.add("NLboxsolve")
 Formulating a problem
 ---------------------
 
-The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these defined, we solve the system using:
+The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
 
 ```julia
 soln = nlboxsolve(F,x,lb,ub)
@@ -72,7 +72,7 @@ which are (hopefully) self-explanatory, but to be explicit the value for ```x```
 Examples
 --------
 
-As a first example, consider the following fivediagonal function:
+As a first example, consider the following 'fivediagonal' function:
 
 ```julia
 function fivediagonal(x)
@@ -153,7 +153,7 @@ ub = [1.0, 1.0]
 soln_d = nlboxsolve(example!,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
-As a final example---one involving the use of the user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
+As a final example---one involving the use of a user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
 
 ```julia
 function f(x)
