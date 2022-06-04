@@ -106,7 +106,7 @@ function test_nlboxsolve_inplace()
 
     soln1 = nlboxsolve(test6,x0,l,u,xtol=1e-15,ftol=1e-15)
 
-    test_one   = maximum(abs,soln_newton.zero - soln1.zero) < 1e-8
+    test_one   = maximum(abs,soln_newton.zero - soln1.zero) < 1e-7
     test_two   = maximum(abs,soln_lm.zero     - soln1.zero) < 1e-8
     test_three = maximum(abs,soln_lm_kyf.zero - soln1.zero) < 1e-8
     test_four  = maximum(abs,soln_lm_fan.zero - soln1.zero) < 1e-8

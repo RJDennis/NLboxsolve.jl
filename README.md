@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains nine algorithms: one based on Newton's method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.
+So far the collection contains ten algorithms: two based on Newton's (or Newton-Raphson's) method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.  Ten solution algorithms is probably overkill, but experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, but no one algorithm dominates for all problems. 
 
 Installing
 ----------
@@ -47,7 +47,8 @@ The solution algorithms
 
 The solution algorithms are the following:
 
-- constrained Newton (method = :newton)
+- constrained Newton-Raphson (method = :nr)
+- constrained multi-step Newton-Raphson (method = :nr_ms)
 - constrained Levenberg-Marquardt (method = :lm)
 - Kanzow, Yamashita, and Fukushima (2004) (method = :lm_kyf)
 - Fan (2013) (method = :lm_fan)
@@ -66,8 +67,9 @@ Each algorithm returns the solution in a structure that has the following fields
 - xdist
 - fdist
 - iters
+- trace
 
-which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```.
+which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```. The path taken by the solver is stored in the ```trace``` field.
 
 Examples
 --------
@@ -208,6 +210,8 @@ Related packages
 
 - NLsolve.jl
 - Complementarity.jl
+- NonlinearSolvers,jl
+- NonlinearSolve.jl
 
 References
 ----------
