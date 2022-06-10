@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains ten algorithms: two based on Newton's (or Newton-Raphson's) method, four based on Levenberg-Marquardt, one based on Powell's dogleg method, and three based on Newton-Krylov methods, one of which is Jacobian-free.  Ten solution algorithms is probably overkill, but experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, but no one algorithm dominates for all problems. 
+So far the collection contains twelve algorithms: two based on Newton's (or Newton-Raphson's) method, four based on Levenberg-Marquardt, three trust region methods (two of which are dogleg-based methods), and three based on Newton-Krylov methods, one of which is Jacobian-free.  Twelve solution algorithms is probably overkill, but experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, and no one algorithm dominates for all problems. At some point I plan to test the various methods on a library of test problems, culling the weak and the feeble.
 
 Installing
 ----------
@@ -47,15 +47,17 @@ The solution algorithms
 
 The solution algorithms are the following:
 
-- constrained Newton-Raphson (method = :nr)
-- constrained multi-step Newton-Raphson (method = :nr_ms)
-- constrained Levenberg-Marquardt (method = :lm)
+- Constrained Newton-Raphson (method = :nr)
+- Constrained multi-step Newton-Raphson (method = :nr_ms)
+- Constrained Levenberg-Marquardt (method = :lm)
 - Kanzow, Yamashita, and Fukushima (2004) (method = :lm_kyf)
 - Fan (2013) (method = :lm_fan)
 - Amini and Rostami (2016) (method = :lm_ar) (this is the default method)
-- Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg)
+- Traditional trust region (method = :ttr) (based on Nocedal and Wright, 2006)
+- Trust region Dogleg method (method = :dogleg) (based on Nocedal and Wright, 2006)
+- Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg_bmp)
 - Chen and Vuik (2016) (method = :nk)
-- a constrained globalized Newton-Krylov method based on Frontini and Sormani (2004) (method = :nk_fs)
+- A constrained globalized Newton-Krylov method based on Frontini and Sormani (2004) (method = :nk_fs)
 - Jacobian-free Newton Krylov (method = :jfnk)
 
 Each algorithm returns the solution in a structure that has the following fields:
@@ -227,3 +229,5 @@ Fan, J., (2013), "On the Levenberg-Marquardt Methods for Convex Constrained Nonl
 Frontini, M., and E. Sormani, (2004), "Third-order Methods from Quadrature Formulae for Solving Systems of Nonlinear Equations", *Applied Mathematics and Computation*, 149, pp. 771–782.
 
 Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", *Journal of Computational and Applied Mathematics*, 172, pp. 375–397.
+
+Nocedal, J and S. Wright, (2006), Numerical Optimization, second edition, Springer.

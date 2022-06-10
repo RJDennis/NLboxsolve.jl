@@ -46,6 +46,8 @@ end
 
 ################ Solvers ###################
 
+### Constrained Newton-Raphson
+
 function constrained_newton(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
@@ -146,7 +148,8 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
         xn .= xk - jk\ffk
   
         box_projection!(xn,lb,ub)
-
+       
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -162,7 +165,8 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
         end
   
     end
-  
+
+    f(ffk,xn)
     results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
@@ -285,6 +289,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
   
         box_projection!(xn,lb,ub)
 
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -301,6 +306,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
   
     end
   
+    f(ffk,xn)
     results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
@@ -409,6 +415,7 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
   
         box_projection!(xn,lb,ub)
 
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -425,11 +432,14 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
   
     end
   
+    f(ffk,xn)
     results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
   
 end
+
+### Constrained multi-step Newton-Raphson
 
 function constrained_newton_ms(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
@@ -538,6 +548,7 @@ function constrained_newton_ms_inplace(f::Function,x::Array{T,1},lb::Array{T,1},
 
         box_projection!(xn,lb,ub)
 
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -554,6 +565,7 @@ function constrained_newton_ms_inplace(f::Function,x::Array{T,1},lb::Array{T,1},
   
     end
   
+    f(ffk,xn)
     results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
@@ -682,6 +694,7 @@ function constrained_newton_ms_inplace(f::Function,j::Function,x::Array{T,1},lb:
 
         box_projection!(xn,lb,ub)
 
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -698,6 +711,7 @@ function constrained_newton_ms_inplace(f::Function,j::Function,x::Array{T,1},lb:
   
     end
   
+    f(ffk,xn)
     results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
@@ -812,6 +826,7 @@ function constrained_newton_ms_sparse_inplace(f::Function,x::Array{T,1},lb::Arra
 
         box_projection!(xn,lb,ub)
 
+        f(ffk,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffk)
     
@@ -828,11 +843,620 @@ function constrained_newton_ms_sparse_inplace(f::Function,x::Array{T,1},lb::Arra
   
     end
   
+    f(ffk,xn)
     results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
   
 end
+
+### Constrained trust region
+
+function constrained_trust_region(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_trust_region_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_trust_region_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_trust_region_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= ForwardDiff.jacobian(f,xk)
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        μk = 0.0
+        p .= -jk\f(xk) # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -c.U\(c.L\jk*f(xk))
+                q .= c.L\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+    
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= ForwardDiff.jacobian(f,ffk,xk)
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+        μk = 0.0
+        p .= - jk\ffk # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -c.U\(c.L\jk*ffk)
+                q .= c.L\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        f(ffn,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffn)
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    f(ffn,xn)
+    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_trust_region(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_trust_region_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_trust_region_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        μk = 0.0
+        p .= - jk\f(xk) # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -c.U\(c.L\jk*f(xk))
+                q .= c.L\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+    
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        f(ffk,xk)  
+        μk = 0.0
+        p .= - jk\ffk # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -c.U\(c.L\jk*ffk)
+                q .= c.L\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        f(ffn,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffn)
+
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+
+    end
+  
+    f(ffn,xn)
+    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_trust_region_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_trust_region_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_trust_region_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = sparse(Array{T,2}(undef,n,n))
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= sparse(ForwardDiff.jacobian(f,xk))
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
+
+        μk = 0.0
+        p .= - jk\f(xk) # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -sparse(c.L)'\(sparse(c.L)\jk*f(xk))
+                q .= sparse(c.L)\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    p = Array{T,1}(undef,n)
+    q = Array{T,1}(undef,n)
+    jk = sparse(Array{T,2}(undef,n,n))
+
+    ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+    
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
+
+        μk = 0.0
+        p .= - jk\ffk # Newton-Raphson step
+        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
+            count = 1
+            while count <= 5
+                c = cholesky(jk'jk+μk*I)
+                p .= -sparse(c.L)'\(sparse(c.L)\jk*ffk)
+                q .= sparse(c.L)\p
+                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
+                count += 1
+            end
+        end
+
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)   
+            if ρ >= η2 && isapprox(norm(p),δ) 
+                δ = min(γ1*δ,δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
+
+        f(ffn,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffn)
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+
+  
+    end
+  
+    f(ffn,xn)
+    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+### Constrained Levenberg-Marquardt
 
 function constrained_levenberg_marquardt(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
@@ -1262,6 +1886,8 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
     return results
    
 end
+
+### Constrained Levenberg-Marquardt-kyf
 
 function constrained_levenberg_marquardt_kyf(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
@@ -1923,6 +2549,8 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
    
 end
 
+### Constrained Levenberg-Marquardt-fan
+
 function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
@@ -2221,10 +2849,6 @@ function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::
     # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
     # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
 
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
     j_inplace = !applicable(j,x)
     
     n = length(x)
@@ -2496,6 +3120,8 @@ function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array
     return results
  
 end
+
+### Constrained Levenberg-Marquardt-ar
 
 function constrained_levenberg_marquardt_ar(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
@@ -3184,6 +3810,601 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
   
 end
 
+### Constrained doglog
+
+function constrained_dogleg_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_dogleg_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_dogleg_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_dogleg_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= ForwardDiff.jacobian(f,xk)
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        pnk .= -jk\f(xk) # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'f(xk)
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_dogleg_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    ffk = Array{T,1}(undef,n)
+
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= ForwardDiff.jacobian(f,ffk,xk)
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        pnk .= -jk\ffk # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'ffk
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+       
+        f(ffk,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffk)
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+
+    f(ffk,xn)
+    results = SolverResults(:dogleg,x,xn,ffk,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_dogleg_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_dogleg_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_dogleg_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        pnk .= -jk\f(xk) # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'f(xk)
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p  
+        box_projection!(xn,lb,ub)
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_dogleg_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = Array{T,2}(undef,n,n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    ffk = Array{T,1}(undef,n)
+
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        f(ffk,xk)
+        pnk .= -jk\ffk # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'ffk
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+  
+        f(ffk,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffk)
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    f(ffk,xn)
+    results = SolverResults(:dogleg,x,xn,ffk,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    for i in eachindex(x)
+        if x[i] < lb[i] || x[i] > ub[i]
+            println("Warning: Initial point is outside the box.")
+            box_projection!(x,lb,ub) # Put the initial guess inside the box
+            break
+        end
+    end
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_dogleg_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    else
+        return constrained_dogleg_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    end
+
+end
+
+function constrained_dogleg_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = sparse(Array{T,2}(undef,n,n))
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= sparse(ForwardDiff.jacobian(f,xk))
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
+
+        pnk .= -jk\f(xk) # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'f(xk)
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p  
+        box_projection!(xn,lb,ub)
+
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,f(xn))
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+function constrained_dogleg_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n = length(x)
+    xk = copy(x)
+    xn = Array{T,1}(undef,n)
+    pnk = Array{T,1}(undef,n)
+    pck = Array{T,1}(undef,n)
+    p = Array{T,1}(undef,n)
+    pdiff = Array{T,1}(undef,n)
+    gk = Array{T,1}(undef,n)
+    jk = sparse(Array{T,2}(undef,n,n))
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    ffk = Array{T,1}(undef,n)
+
+    # Initialize solution trace
+    f(ffk,xk)
+    solver_state = SolverState(0,NaN,maximum(abs,ffk))
+    solution_trace = SolverTrace(Array{SolverState}(undef,0))
+    push!(solution_trace.trace,solver_state)
+
+    # Initialize solver-parameters
+    δ = 1.0
+    γ1 = 2.0
+    γ2 = 0.25
+    η1 = 0.25
+    η2 = 0.75
+    δhat = 1/(100*eps())
+
+    iter = 0
+    while true
+
+        jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
+        pnk .= -jk\ffk # This is the Newton step
+        if norm(pnk) <= δ # The Newton step is inside the trust region
+            p .= pnk
+        else # The Newton step is outside the trust region
+            gk .= jk'ffk
+            #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
+            pck .= -gk # This is the Cauchy step
+            if norm(pck) > δ # The Cauchy step is outside the trust region
+                p .= -(δ/norm(gk))*gk
+            else # The Cauchy step is inside the trust region
+                pdiff .= pnk-pck
+                c = norm(pck)^2-δ^2
+                b = 2*pck'pdiff
+                a = norm(pdiff)
+                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                τ = max(τ1,τ2)
+                p .= pck .+ τ*pdiff
+            end
+        end
+
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+
+        f(ffk,xn)
+        lenx = maximum(abs,xn-xk)
+        lenf = maximum(abs,ffk)
+    
+        xk .= xn
+
+        iter += 1
+
+        solver_state = SolverState(iter,lenx,lenf)
+        push!(solution_trace.trace,solver_state)
+
+        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
+            break
+        end
+  
+    end
+  
+    f(ffk,xn)
+    results = SolverResults(:dogleg,x,xn,ffk,lenx,lenf,iter,solution_trace)
+
+    return results
+  
+end
+
+### Constrained dogleg-bmp
+
 #=
 function coleman_li(f::Function,j::Array{T,2},x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
@@ -3383,7 +4604,9 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
 
 end
 
-function constrained_dogleg_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+### Constrained dogleg-bmp solvers
+
+function constrained_dogleg_bmp_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
@@ -3400,14 +4623,14 @@ function constrained_dogleg_solver(f::Function,x::Array{T,1},lb::Array{T,1},ub::
     f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
-        return constrained_dogleg_solver_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -3499,13 +4722,13 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
 end
 
-function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -3604,13 +4827,13 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
 end
 
-function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
@@ -3627,14 +4850,14 @@ function constrained_dogleg_solver(f::Function,j::Function,x::Array{T,1},lb::Arr
     f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
-        return constrained_dogleg_solver_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -3733,13 +4956,13 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
 end
 
-function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -3846,13 +5069,13 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
 end
 
-function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
@@ -3869,14 +5092,14 @@ function constrained_dogleg_solver_sparse(f::Function,x::Array{T,1},lb::Array{T,
     f_inplace = !applicable(f,x) # Check if function is inplace
 
     if f_inplace == false
-        return constrained_dogleg_solver_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
-        return constrained_dogleg_solver_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        return constrained_dogleg_bmp_solver_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     end
 
 end
 
-function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -3968,13 +5191,13 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
 end
 
-function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
+function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
 
     # This is an implementation of the algorithm from Bellavia, Macconi, and Pieraccini (2012), "Constrained 
     # dogleg methods for nonlinear systems with simple bounds", Computational Optimization and Applications, 
@@ -4073,11 +5296,13 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = SolverResults(:dogleg_bmp,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
 end
+
+### Constrained Newton-Krylov
 
 function constrained_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
@@ -4765,6 +5990,8 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
     return results
  
 end
+
+### Constrained Newton-Krylov-fs
 
 function constrained_newton_krylov_fs(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
@@ -5514,6 +6741,8 @@ function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},l
  
 end
 
+### Constrained Jacobian-free Newton-Krylov
+
 function constrained_jacobian_free_newton_krylov(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
 
     if box_check(lb,ub) !== true # Check that box is formed correctly
@@ -5738,6 +6967,12 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
         elseif sparsejac == :yes
             return constrained_newton_ms_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
         end
+    elseif method == :ttr
+        if sparsejac == :no
+            return constrained_trust_region(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_trust_region_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :lm
         if sparsejac == :no
             return constrained_levenberg_marquardt(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -5768,6 +7003,12 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
         elseif sparsejac == :yes
             return constrained_dogleg_solver_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
         end
+    elseif method == :dogleg_bmp
+        if sparsejac == :no
+            return constrained_dogleg_bmp_solver(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        elseif sparsejac == :yes
+            return constrained_dogleg_bmp_solver_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+        end
     elseif method == :nk
         if sparsejac == :no
             return constrained_newton_krylov(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
@@ -5794,6 +7035,8 @@ function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf
         return constrained_newton(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :nr_ms
         return constrained_newton_ms(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :ttr
+        return constrained_trust_region(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :lm
         return constrained_levenberg_marquardt(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :lm_kyf
@@ -5804,6 +7047,8 @@ function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf
         return constrained_levenberg_marquardt_ar(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :dogleg
         return constrained_dogleg_solver(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
+    elseif method == :dogleg_bmp
+        return constrained_dogleg_bmp_solver(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :nk
         return constrained_newton_krylov(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     elseif method == :nk_fs
