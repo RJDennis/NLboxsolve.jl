@@ -31,7 +31,7 @@ function test_nlboxsolve_outplace()
     soln_lm_kyf     = constrained_levenberg_marquardt_kyf(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_lm_fan     = constrained_levenberg_marquardt_fan(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_lm_ar      = constrained_levenberg_marquardt_ar(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
-    soln_tr         = constrained_trust_region(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
+#    soln_tr         = constrained_trust_region(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_dogleg     = constrained_dogleg_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_dogleg_bmp = constrained_dogleg_bmp_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_nk         = constrained_newton_krylov(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
@@ -44,7 +44,7 @@ function test_nlboxsolve_outplace()
     soln_lm_kyf_sparse     = constrained_levenberg_marquardt_kyf_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_fan_sparse     = constrained_levenberg_marquardt_fan_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_ar_sparse      = constrained_levenberg_marquardt_ar_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
-    soln_tr_sparse         = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
+#    soln_tr_sparse         = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_dogleg_sparse     = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_dogleg_bmp_sparse = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_nk_sparse         = constrained_newton_krylov_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
@@ -59,7 +59,7 @@ function test_nlboxsolve_outplace()
     test_four   = maximum(abs,soln_lm_kyf.zero       - soln2.zero) < 1e-14
     test_five   = maximum(abs,soln_lm_fan.zero       - soln2.zero) < 1e-14
     test_six    = maximum(abs,soln_lm_ar.zero        - soln2.zero) < 1e-14
-    #test_seven  = maximum(abs,soln_tr.zero           - soln2.zero) < 1e-14
+#    test_seven  = maximum(abs,soln_tr.zero           - soln2.zero) < 1e-14
     test_eight  = maximum(abs,soln_dogleg.zero       - soln2.zero) < 1e-14
     test_nine   = maximum(abs,soln_dogleg_bmp.zero   - soln2.zero) < 1e-14
     test_ten    = maximum(abs,soln_nk.zero           - soln2.zero) < 1e-14
@@ -72,14 +72,14 @@ function test_nlboxsolve_outplace()
     test_sixteen      = maximum(abs,soln_lm_kyf_sparse.zero       - soln2.zero) < 1e-14
     test_seventeen    = maximum(abs,soln_lm_fan_sparse.zero       - soln2.zero) < 1e-14
     test_eighteen     = maximum(abs,soln_lm_ar_sparse.zero        - soln2.zero) < 1e-14
-    test_nineteen     = maximum(abs,soln_tr_sparse.zero           - soln2.zero) < 1e-14
+#    test_nineteen     = maximum(abs,soln_tr_sparse.zero           - soln2.zero) < 1e-14
     test_twenty       = maximum(abs,soln_dogleg_sparse.zero       - soln2.zero) < 1e-14
     test_twenty_one   = maximum(abs,soln_dogleg_bmp_sparse.zero   - soln2.zero) < 1e-14
     test_twenty_two   = maximum(abs,soln_nk_sparse.zero           - soln2.zero) < 1e-14
     test_twenty_three = maximum(abs,soln_nk_fs_sparse.zero        - soln2.zero) < 1e-14
 
     return test_one, test_two, test_three, test_four, test_five, test_six, test_eight, test_nine, test_ten, test_eleven,
-           test_twelve, test_thirteen, test_fourteen, test_fifteen, test_sixteen, test_seventeen, test_eighteen, test_nineteen, test_twenty,
+           test_twelve, test_thirteen, test_fourteen, test_fifteen, test_sixteen, test_seventeen, test_eighteen, test_twenty,
            test_twenty_one, test_twenty_two, test_twenty_three
 
 end
@@ -109,7 +109,7 @@ function test_nlboxsolve_inplace()
     soln_lm_kyf     = constrained_levenberg_marquardt_kyf(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_lm_fan     = constrained_levenberg_marquardt_fan(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_lm_ar      = constrained_levenberg_marquardt_ar(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
-    soln_tr         = constrained_trust_region(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
+#    soln_tr         = constrained_trust_region(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_dogleg     = constrained_dogleg_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_dogleg_bmp = constrained_dogleg_bmp_solver(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
     soln_nk         = constrained_newton_krylov(gershwin,x0,l,u,xtol=1e-15,ftol=1e-15)
@@ -122,7 +122,7 @@ function test_nlboxsolve_inplace()
     soln_lm_kyf_sparse     = constrained_levenberg_marquardt_kyf_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_fan_sparse     = constrained_levenberg_marquardt_fan_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_lm_ar_sparse      = constrained_levenberg_marquardt_ar_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
-    soln_tr_sparse         = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
+#    soln_tr_sparse         = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_dogleg_sparse     = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_dogleg_bmp_sparse = constrained_dogleg_solver_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
     soln_nk_sparse         = constrained_newton_krylov_sparse(gershwin,x0,l,u,ftol=1e-15,xtol=1e-15)
@@ -150,14 +150,14 @@ function test_nlboxsolve_inplace()
     test_sixteen      = maximum(abs,soln_lm_kyf_sparse.zero       - soln2.zero) < 1e-14
     test_seventeen    = maximum(abs,soln_lm_fan_sparse.zero       - soln2.zero) < 1e-14
     test_eighteen     = maximum(abs,soln_lm_ar_sparse.zero        - soln2.zero) < 1e-14
-    test_nineteen     = maximum(abs,soln_tr_sparse.zero           - soln2.zero) < 1e-14
+#    test_nineteen     = maximum(abs,soln_tr_sparse.zero           - soln2.zero) < 1e-14
     test_twenty       = maximum(abs,soln_dogleg_sparse.zero       - soln2.zero) < 1e-14
     test_twenty_one   = maximum(abs,soln_dogleg_bmp_sparse.zero   - soln2.zero) < 1e-14
     test_twenty_two   = maximum(abs,soln_nk_sparse.zero           - soln2.zero) < 1e-14
     test_twenty_three = maximum(abs,soln_nk_fs_sparse.zero        - soln2.zero) < 1e-14
 
     return test_one, test_two, test_three, test_four, test_five, test_six, test_eight, test_nine, test_ten, test_eleven,
-           test_twelve, test_thirteen, test_fourteen, test_fifteen, test_sixteen, test_seventeen, test_eighteen, test_nineteen, test_twenty,
+           test_twelve, test_thirteen, test_fourteen, test_fifteen, test_sixteen, test_seventeen, test_eighteen, test_twenty,
            test_twenty_one, test_twenty_two, test_twenty_three
 
 end
