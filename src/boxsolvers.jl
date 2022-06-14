@@ -911,6 +911,10 @@ function constrained_trust_region_outplace(f::Function,x::Array{T,1},lb::Array{T
 
         μk = 0.0
         p .= -jk\f(xk) # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
+
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -997,6 +1001,10 @@ function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,
         end
         μk = 0.0
         p .= - jk\ffk # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
+
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -1113,6 +1121,9 @@ function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1}
 
         μk = 0.0
         p .= - jk\f(xk) # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -1207,6 +1218,9 @@ function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},
         f(ffk,xk)  
         μk = 0.0
         p .= - jk\ffk # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -1317,6 +1331,9 @@ function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::
 
         μk = 0.0
         p .= - jk\f(xk) # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -1404,6 +1421,9 @@ function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::A
 
         μk = 0.0
         p .= - jk\ffk # Newton-Raphson step
+        xn .= xk .+ p
+        box_projection!(xn,lb,ub)
+        p .= xn .- xk
         if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
             count = 1
             while count <= 5
@@ -1968,7 +1988,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
                 while true
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -2068,7 +2088,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -2190,7 +2210,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
                 while true
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -2298,7 +2318,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -2413,7 +2433,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
                 while true
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -2513,7 +2533,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
                     xt .= xk-alpha*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
@@ -3841,6 +3861,7 @@ function constrained_dogleg_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -3873,28 +3894,50 @@ function constrained_dogleg_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
         end
 
         pnk .= -jk\f(xk) # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'f(xk)
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
-                p .= -(δ/norm(gk))*gk
+                p .= (δ/norm(pck))*pck
             else # The Cauchy step is inside the trust region
                 pdiff .= pnk-pck
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
+
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -3923,6 +3966,7 @@ function constrained_dogleg_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -3934,6 +3978,7 @@ function constrained_dogleg_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
     lenf = zero(T)
 
     ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
 
     # Initialize solution trace
     f(ffk,xk)
@@ -3958,28 +4003,51 @@ function constrained_dogleg_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
         end
 
         pnk .= -jk\ffk # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'ffk
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
-                p .= -(δ/norm(gk))*gk
+                p .= -(δ/norm(pck))*pck
             else # The Cauchy step is inside the trust region
                 pdiff .= pnk-pck
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
        
         f(ffk,xn)
         lenx = maximum(abs,xn-xk)
@@ -4036,6 +4104,7 @@ function constrained_dogleg_outplace(f::Function,j::Function,x::Array{T,1},lb::A
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -4072,12 +4141,18 @@ function constrained_dogleg_outplace(f::Function,j::Function,x::Array{T,1},lb::A
         end
 
         pnk .= -jk\f(xk) # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'f(xk)
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
                 p .= -(δ/norm(gk))*gk
             else # The Cauchy step is inside the trust region
@@ -4085,15 +4160,31 @@ function constrained_dogleg_outplace(f::Function,j::Function,x::Array{T,1},lb::A
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p  
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
+
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -4124,6 +4215,7 @@ function constrained_dogleg_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -4135,6 +4227,7 @@ function constrained_dogleg_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
     lenf = zero(T)
 
     ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
 
     # Initialize solution trace
     f(ffk,xk)
@@ -4164,28 +4257,51 @@ function constrained_dogleg_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
 
         f(ffk,xk)
         pnk .= -jk\ffk # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'ffk
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
-                p .= -(δ/norm(gk))*gk
+                p .= -(δ/norm(pck))*pck
             else # The Cauchy step is inside the trust region
                 pdiff .= pnk-pck
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
   
         f(ffk,xn)
         lenx = maximum(abs,xn-xk)
@@ -4240,6 +4356,7 @@ function constrained_dogleg_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -4272,29 +4389,50 @@ function constrained_dogleg_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
         end
 
         pnk .= -jk\f(xk) # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'f(xk)
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
-                p .= -(δ/norm(gk))*gk
+                p .= -(δ/norm(pck))*pck
             else # The Cauchy step is inside the trust region
                 pdiff .= pnk-pck
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p  
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
 
+        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
     
@@ -4322,6 +4460,7 @@ function constrained_dogleg_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
     n = length(x)
     xk = copy(x)
     xn = Array{T,1}(undef,n)
+    xt = Array{T,1}(undef,n)
     pnk = Array{T,1}(undef,n)
     pck = Array{T,1}(undef,n)
     p = Array{T,1}(undef,n)
@@ -4333,6 +4472,7 @@ function constrained_dogleg_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
     lenf = zero(T)
 
     ffk = Array{T,1}(undef,n)
+    ffn = Array{T,1}(undef,n)
 
     # Initialize solution trace
     f(ffk,xk)
@@ -4356,28 +4496,51 @@ function constrained_dogleg_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
             error("The jacobian has non-finite elements")
         end
         pnk .= -jk\ffk # This is the Newton step
+        xn .= xk .+ pnk
+        box_projection!(xn,lb,ub)
+        pnk .= xn .- xk
         if norm(pnk) <= δ # The Newton step is inside the trust region
             p .= pnk
         else # The Newton step is outside the trust region
             gk .= jk'ffk
             #pck .= -((gk'gk)/(gk'jk'jk*gk))*gk # This is the Cauchy step
             pck .= -gk # This is the Cauchy step
+            xt .= xk .+ pck
+            box_projection!(xt,lb,ub)
+            pck .= xt .- xk
             if norm(pck) > δ # The Cauchy step is outside the trust region
-                p .= -(δ/norm(gk))*gk
+                p .= -(δ/norm(pck))*pck
             else # The Cauchy step is inside the trust region
                 pdiff .= pnk-pck
                 c = norm(pck)^2-δ^2
                 b = 2*pck'pdiff
                 a = norm(pdiff)
-                τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
-                τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
-                τ = max(τ1,τ2)
+                if b^2-4*a*c > 0.0
+                    τ1 = (1/(2*a))*(-b + sqrt(b^2-4*a*c))
+                    τ2 = (1/(2*a))*(-b - sqrt(b^2-4*a*c))
+                    τ = max(τ1,τ2)
+                else
+                    τ = 0.0
+                end
                 p .= pck .+ τ*pdiff
             end
         end
 
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
+        # Now check and update the trust region
+
+        f(ffn,xk+p)
+        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
+        if ρ >= η1
+            xn .= xk .+ p
+            box_projection!(xn,lb,ub)    
+            if ρ >= η2 && isapprox(norm(p),δ)
+                δ = min(γ1*norm(p),δhat)
+            else
+                δ = norm(p)
+            end
+        else
+            δ = γ2*δ
+        end
 
         f(ffk,xn)
         lenx = maximum(abs,xn-xk)
@@ -4468,7 +4631,7 @@ function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::
     return df
 end
 
-function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,theta::T) where {T <: AbstractFloat}
 
     lambdak = Inf
     for i in eachindex(gk)
@@ -4479,7 +4642,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
         end
     end
 
-    taukprime = min(-(f(x)'*jk*gk)/norm(jk*gk)^2,deltak/norm(Gk*gk))
+    taukprime = min(-(f(x)'*jk*gk)/norm(jk*gk)^2,δ/norm(Gk*gk))
     tauk = taukprime
     if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
         tauk = theta*lambdak
@@ -4493,8 +4656,8 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
         return (pc+pkn)/2
     else
         gammahat = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
-        if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2) >= 0.0
-            r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^0.5
+        if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2) >= 0.0
+            r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2))^0.5
             gammaplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
             gammaminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
         else
@@ -4534,7 +4697,7 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
 
 end
 
-function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},deltak::T,theta::T) where {T <: AbstractFloat}
+function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,theta::T) where {T <: AbstractFloat}
 
     ff = Array{T,1}(undef,length(x))
 
@@ -4548,7 +4711,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
     end
 
     f(ff,x)
-    taukprime = min(-(ff'*jk*gk)/norm(jk*gk)^2,deltak/norm(Gk*gk))
+    taukprime = min(-(ff'*jk*gk)/norm(jk*gk)^2,δ/norm(Gk*gk))
 
     tauk = taukprime
     if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
@@ -4563,8 +4726,8 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
         return (pc+pkn)/2
     else
         gammahat = -(ff+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
-        if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2) >= 0.0
-            r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-deltak^2))^0.5
+        if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2) >= 0.0
+            r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2))^0.5
             gammaplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
             gammaminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
         else
@@ -4656,9 +4819,11 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,x::Array{T,1},lb::Ar
     push!(solution_trace.trace,solver_state)
    
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64
@@ -4686,21 +4851,21 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,x::Array{T,1},lb::Ar
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
-        alphak = max(theta,1.0-norm(f(xk)))
+        α = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
-            rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
@@ -4758,9 +4923,11 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,x::Array{T,1},lb::Arr
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64
@@ -4788,27 +4955,27 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,x::Array{T,1},lb::Arr
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
-        alphak = max(theta,1.0-norm(ffk))
+        α = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
             f(ffn,xk+p)
-            rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
         end
-
+    
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,ffn)
@@ -4885,9 +5052,11 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,j::Function,x::Array
     push!(solution_trace.trace,solver_state)
     
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64
@@ -4920,21 +5089,21 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,j::Function,x::Array
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
-        alphak = max(theta,1.0-norm(f(xk)))
+        α = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
-            rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
@@ -4994,9 +5163,11 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,j::Function,x::Array{
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64
@@ -5030,22 +5201,22 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,j::Function,x::Array{
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
-        alphak = max(theta,1.0-norm(ffk))
+        α = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
             f(ffn,xk+p)
-            rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
@@ -5125,9 +5296,11 @@ function constrained_dogleg_bmp_solver_sparse_outplace(f::Function,x::Array{T,1}
     push!(solution_trace.trace,solver_state)
     
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64  
@@ -5155,21 +5328,21 @@ function constrained_dogleg_bmp_solver_sparse_outplace(f::Function,x::Array{T,1}
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'f(xk)
    
-        alphak = max(theta,1.0-norm(f(xk)))
+        α = max(theta,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
-            rhof = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
@@ -5227,9 +5400,11 @@ function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    deltak = 1.0 
+    δ = 1.0 
+    γ1 = 2.0
+    γ2 = 0.25
     theta  = 0.99995 
-    beta1  = 0.5#0.25 
+    beta1  = 0.5 
     beta2  = 0.9 
 
     # Replace infinities with largest possible Float64
@@ -5257,22 +5432,22 @@ function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'ffk
    
-        alphak = max(theta,1.0-norm(ffk))
+        α = max(theta,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
-        pkn .= alphak*(pkn-xk)
+        pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
     
         while true
             f(ffn,xk+p)
-            rhof = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if rhof < beta1 # linear approximation is poor fit so reduce the trust region
-                deltak = min(0.25*deltak,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
-            elseif rhof > beta2 # linear approximation is good fit so expand the trust region
-                deltak = max(deltak,2*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,deltak,theta)
+            ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
+            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+                δ = min(γ2*δ,0.5*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                δ = max(δ,γ1*norm(p))
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
             end
             xn .= xk .+ p
             break
