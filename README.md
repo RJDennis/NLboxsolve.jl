@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains twelve algorithms: two based on Newton's (or Newton-Raphson's) method, four based on Levenberg-Marquardt, three trust region methods (two of which are dogleg-based methods), and three based on Newton-Krylov methods, one of which is Jacobian-free.  Twelve solution algorithms is probably overkill, but experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, and no one algorithm dominates for all problems. At some point I plan to test the various methods on a library of test problems, culling the weak and the feeble.
+So far the collection contains eight algorithms: one based on Newton's (or Newton-Raphson's) method, three based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.  Experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, and no one algorithm dominates for all problems.
 
 Installing
 ----------
@@ -48,16 +48,12 @@ The solution algorithms
 The solution algorithms are the following:
 
 - Constrained Newton-Raphson (method = :nr)
-- Constrained multi-step Newton-Raphson (method = :nr_ms)
 - Constrained Levenberg-Marquardt (method = :lm)
 - Kanzow, Yamashita, and Fukushima (2004) (method = :lm_kyf)
-- Fan (2013) (method = :lm_fan)
 - Amini and Rostami (2016) (method = :lm_ar) (this is the default method)
-- Traditional trust region (method = :ttr) (based on Nocedal and Wright, 2006)
 - Trust region Dogleg method (method = :dogleg) (based on Nocedal and Wright, 2006)
 - Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg_bmp)
 - Chen and Vuik (2016) (method = :nk)
-- A constrained globalized Newton-Krylov method based on Frontini and Sormani (2004) (method = :nk_fs)
 - Jacobian-free Newton Krylov (method = :jfnk)
 
 Each algorithm returns the solution in a structure that has the following fields:
@@ -201,10 +197,10 @@ end
 x0 = [0.1, 1.2]
 lb = [0.0, 0.0]
 ub = [5.0, 5.0]
-soln_e = nlboxsolve(f,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_f = nlboxsolve(f,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_g = nlboxsolve(f!,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
-soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:newton)
+soln_e = nlboxsolve(f,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
+soln_f = nlboxsolve(f,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
+soln_g = nlboxsolve(f!,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
+soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 ```
 
 Related packages
@@ -223,10 +219,6 @@ Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Met
 Bellavia, S., Macconi, M., and S. Pieraccini, (2012), "Constrained Dogleg Methods for Nonlinear Systems with Simple Bounds", *Computational Optimization and Applications*, 53, pp. 771–794.
 
 Chen, J., and C. Vuik, (2016), "Globalization Technique for Projected Newton-Krylov Methods", *International Journal for Numerical Methods in Engineering*, 110, pp.661–674. 
-
-Fan, J., (2013), "On the Levenberg-Marquardt Methods for Convex Constrained Nonlinear Equations", *Journal of Industrial and Management Optimization*, 9, 1, pp. 227–241.
-
-Frontini, M., and E. Sormani, (2004), "Third-order Methods from Quadrature Formulae for Solving Systems of Nonlinear Equations", *Applied Mathematics and Computation*, 149, pp. 771–782.
 
 Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", *Journal of Computational and Applied Mathematics*, 172, pp. 375–397.
 

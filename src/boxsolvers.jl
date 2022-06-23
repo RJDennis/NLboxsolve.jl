@@ -439,1043 +439,6 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
   
 end
 
-### Constrained multi-step Newton-Raphson
-
-function constrained_newton_ms(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_ms_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_newton_ms_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_newton_ms_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        jk .= ForwardDiff.jacobian(f,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-        xn .= xk - jk\f(xk)
-        xn .= xn - jk\f(xn)
-        xn .= xn - jk\f(xn)
-  
-        box_projection!(xn,lb,ub)
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:nr_ms,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_newton_ms_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    ffk = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        jk .= ForwardDiff.jacobian(f,ffk,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-        xn .= xk - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-
-        box_projection!(xn,lb,ub)
-
-        f(ffk,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffk)
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    f(ffk,xn)
-    results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_newton_ms(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_ms_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_newton_ms_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_newton_ms_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        xn .= xk - jk\f(xk)
-        xn .= xn - jk\f(xn)
-        xn .= xn - jk\f(xn)
-  
-        box_projection!(xn,lb,ub)
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:nr_ms,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_newton_ms_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    ffk = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        f(ffk,xk)
-        xn .= xk - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-
-        box_projection!(xn,lb,ub)
-
-        f(ffk,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffk)
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    f(ffk,xn)
-    results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_newton_ms_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_ms_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_newton_ms_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_newton_ms_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        jk .= sparse(ForwardDiff.jacobian(f,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-
-        xn .= xk - jk\f(xk)
-        xn .= xn - jk\f(xn)
-        xn .= xn - jk\f(xn)
-
-        box_projection!(xn,lb,ub)
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:nr_ms,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_newton_ms_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    ffk = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    iter = 0
-    while true
-
-        jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-        xn .= xk - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-        f(ffk,xn)
-        xn .= xn - jk\ffk
-
-        box_projection!(xn,lb,ub)
-
-        f(ffk,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffk)
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    f(ffk,xn)
-    results = SolverResults(:nr_ms,x,xn,ffk,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-### Constrained trust region
-
-function constrained_trust_region(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_trust_region_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_trust_region_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_trust_region_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        jk .= ForwardDiff.jacobian(f,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        μk = 0.0
-        p .= -jk\f(xk) # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -c.U\(c.L\jk*f(xk))
-                q .= c.L\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)    
-            if ρ >= η2 && isapprox(norm(p),δ)
-                δ = min(γ1*norm(p),δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = Array{T,2}(undef,n,n)
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        jk .= ForwardDiff.jacobian(f,ffk,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-        μk = 0.0
-        p .= - jk\ffk # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -c.U\(c.L\jk*ffk)
-                q .= c.L\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        f(ffn,xk+p)
-        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)    
-            if ρ >= η2 && isapprox(norm(p),δ)
-                δ = min(γ1*norm(p),δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_trust_region(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_trust_region_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_trust_region_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        μk = 0.0
-        p .= - jk\f(xk) # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -c.U\(c.L\jk*f(xk))
-                q .= c.L\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)    
-            if ρ >= η2 && isapprox(norm(p),δ)
-                δ = min(γ1*norm(p),δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = Array{T,2}(undef,n,n)
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        f(ffk,xk)  
-        μk = 0.0
-        p .= - jk\ffk # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -c.U\(c.L\jk*ffk)
-                q .= c.L\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        f(ffn,xk+p)
-        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)    
-            if ρ >= η2 && isapprox(norm(p),δ)
-                δ = min(γ1*norm(p),δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_trust_region_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_trust_region_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_trust_region_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        jk .= sparse(ForwardDiff.jacobian(f,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-
-        μk = 0.0
-        p .= - jk\f(xk) # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -sparse(c.L)'\(sparse(c.L)\jk*f(xk))
-                q .= sparse(c.L)\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        ρ = (norm(f(xk)) - norm(f(xk+p)))/(norm(f(xk)) - norm(f(xk) + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)    
-            if ρ >= η2 && isapprox(norm(p),δ)
-                δ = min(γ1*norm(p),δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-  
-    end
-  
-    results = SolverResults(:ttr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
-function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    p = Array{T,1}(undef,n)
-    q = Array{T,1}(undef,n)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-    
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    δ = 1.0
-    γ1 = 2.0
-    γ2 = 0.25
-    η1 = 0.25
-    η2 = 0.75
-    δhat = 1/(100*eps())
-
-    iter = 0
-    while true
-
-        jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-
-        μk = 0.0
-        p .= - jk\ffk # Newton-Raphson step
-        xn .= xk .+ p
-        box_projection!(xn,lb,ub)
-        p .= xn .- xk
-        if norm(p) > δ # Outside the trust region so approximately find the μ that puts us at the edge of the trust region
-            count = 1
-            while count <= 5
-                c = cholesky(jk'jk+μk*I)
-                p .= -sparse(c.L)'\(sparse(c.L)\jk*ffk)
-                q .= sparse(c.L)\p
-                μk += ((norm(p)/norm(q))^2)*((norm(p)- δ)/δ)
-                count += 1
-            end
-        end
-
-        # Now check and update the trust region
-
-        f(ffn,xk+p)
-        ρ = (norm(ffk) - norm(ffn))/(norm(ffk) - norm(ffk + jk'*p))
-        if ρ >= η1
-            xn .= xk .+ p
-            box_projection!(xn,lb,ub)   
-            if ρ >= η2 && isapprox(norm(p),δ) 
-                δ = min(γ1*δ,δhat)
-            else
-                δ = norm(p)
-            end
-        else
-            δ = γ2*δ
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-    
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-  
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:ttr,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
-  
-end
-
 ### Constrained Levenberg-Marquardt
 
 function constrained_levenberg_marquardt(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
@@ -1518,7 +481,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},lb::
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -1527,7 +490,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},lb::
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1546,7 +509,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,x::Array{T,1},lb::
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -1576,7 +539,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},lb::A
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -1585,7 +548,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},lb::A
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1605,7 +568,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,x::Array{T,1},lb::A
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -1658,7 +621,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Arr
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -1672,7 +635,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Arr
             error("The jacobian has non-finite elements")
         end
 
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1691,7 +654,7 @@ function constrained_levenberg_marquardt_outplace(f::Function,j::Function,x::Arr
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -1723,7 +686,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Arra
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -1738,7 +701,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Arra
         end
 
         f(ffk,xk)
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1758,7 +721,7 @@ function constrained_levenberg_marquardt_inplace(f::Function,j::Function,x::Arra
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -1809,7 +772,7 @@ function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -1818,7 +781,7 @@ function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1837,7 +800,7 @@ function constrained_levenberg_marquardt_sparse_outplace(f::Function,x::Array{T,
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -1867,7 +830,7 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
     solution_trace = SolverTrace(Array{SolverState}(undef,0))
     push!(solution_trace.trace,solver_state)
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -1876,7 +839,7 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
 
         box_projection!(xn,lb,ub)
@@ -1896,7 +859,7 @@ function constrained_levenberg_marquardt_sparse_inplace(f::Function,x::Array{T,1
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -1956,13 +919,13 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -1971,28 +934,28 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
-        if norm(f(xn)) > gamma*norm(f(xk))
+        if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
-                while norm(f(xk+alpha*dk))^2 > norm(f(xk))^2 + 2*alpha*beta*g'dk
-                    alpha = beta*alpha
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
+                while norm(f(xk+α*dk))^2 > norm(f(xk))^2 + 2*α*β*g'dk
+                    α = β*α
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2012,7 +975,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -2049,13 +1012,13 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -2064,35 +1027,35 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
         f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
+        if norm(ffn) > γ*norm(ffk)
             g .= jk'ffk
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
                 while true
-                    f(ffn,xk+alpha*dk)
-                    if norm(ffn)^2 > norm(ffk)^2 + 2*alpha*beta*g'dk
-                        alpha = beta*alpha
+                    f(ffn,xk+α*dk)
+                    if norm(ffn)^2 > norm(ffk)^2 + 2*α*β*g'dk
+                        α = β*α
                     else
                         break
                     end
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2113,7 +1076,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -2173,13 +1136,13 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -2193,28 +1156,28 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
             error("The jacobian has non-finite elements")
         end
 
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
-        if norm(f(xn)) > gamma*norm(f(xk))
+        if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
-                while norm(f(xk+alpha*dk))^2 > norm(f(xk))^2 + 2*alpha*beta*g'dk
-                    alpha = beta*alpha
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
+                while norm(f(xk+α*dk))^2 > norm(f(xk))^2 + 2*α*β*g'dk
+                    α = β*α
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2234,7 +1197,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -2273,13 +1236,13 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -2294,35 +1257,35 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
         end
 
         f(ffk,xk)
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
         f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
+        if norm(ffn) > γ*norm(ffk)
             g .= jk'ffk
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
                 while true
-                    f(ffn,xk+alpha*dk)
-                    if norm(ffn)^2 > norm(ffk)^2 + 2*alpha*beta*g'dk
-                        alpha = beta*alpha
+                    f(ffn,xk+α*dk)
+                    if norm(ffn)^2 > norm(ffk)^2 + 2*α*β*g'dk
+                        α = β*α
                     else
                         break
                     end
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2343,7 +1306,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -2401,13 +1364,13 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(f(xk))^2
+    μk = max(0.5*10^(-8)*norm(f(xk))^2,1e-4)
 
     iter = 0
     while true
@@ -2416,28 +1379,28 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
+        dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
-        if norm(f(xn)) > gamma*norm(f(xk))
+        if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
-                while norm(f(xk+alpha*dk))^2 > norm(f(xk))^2 + 2*alpha*beta*g'dk
-                    alpha = beta*alpha
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
+                while norm(f(xk+α*dk))^2 > norm(f(xk))^2 + 2*α*β*g'dk
+                    α = β*α
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
-                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*sigma*g'*(xt-xk)
+                    if norm(f(xt))^2 <= norm(f(xk))^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2457,7 +1420,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
             break
         end
 
-        muk = min(muk,norm(f(xk))^2)
+        μk = min(μk,norm(f(xk))^2)
 
     end
   
@@ -2494,13 +1457,13 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    beta  = 0.9
-    gamma = 0.99995
-    sigma = 10^(-4)
-    rho   = 10^(-8)
-    p     = 2.1
+    β = 0.9
+    γ = 0.99995
+    σ = 10^(-4)
+    ρ = 10^(-8)
+    p = 2.1
 
-    muk = 0.5*10^(-8)*norm(ffk)^2
+    μk = max(0.5*10^(-8)*norm(ffk)^2,1e-4)
 
     iter = 0
     while true
@@ -2509,35 +1472,35 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
+        dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
 
         f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
+        if norm(ffn) > γ*norm(ffk)
             g .= jk'ffk
-            if g'dk <= -rho*norm(dk)^p
-                alpha = 1.0
+            if g'dk <= -ρ*norm(dk)^p
+                α = 1.0
                 while true
-                    f(ffn,xk+alpha*dk)
-                    if norm(ffn)^2 > norm(ffk)^2 + 2*alpha*beta*g'dk
-                        alpha = beta*alpha
+                    f(ffn,xk+α*dk)
+                    if norm(ffn)^2 > norm(ffk)^2 + 2*α*β*g'dk
+                        α = β*α
                     else
                         break
                     end
                 end
-                xn .= xk + alpha*dk
+                xn .= xk + α*dk
             else
-                alpha = 1.0
+                α = 1.0
                 while true
-                    xt .= xk-alpha*g
+                    xt .= xk-α*g
                     box_projection!(xt,lb,ub)
                     f(ffn,xt)
-                    if norm(ffn)^2 <= norm(ffk)^2 + 2*sigma*g'*(xt-xk)
+                    if norm(ffn)^2 <= norm(ffk)^2 + 2*σ*g'*(xt-xk)
                         xn .=  xt
                         break
                     else
-                        alpha = beta*alpha
+                        α = β*α
                     end
                 end
             end
@@ -2558,7 +1521,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
             break
         end
 
-        muk = min(muk,norm(ffn)^2)
+        μk = min(μk,norm(ffn)^2)
 
     end
   
@@ -2567,578 +1530,6 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
 
     return results
    
-end
-
-### Constrained Levenberg-Marquardt-fan
-
-function constrained_levenberg_marquardt_fan(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_levenberg_marquardt_fan_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_levenberg_marquardt_fan_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_levenberg_marquardt_fan_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        muk = mu*norm(f(xk))^delta
-
-        jk .= ForwardDiff.jacobian(f,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        if norm(f(xn)) > gamma*norm(f(xk))
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,lb,ub)
-                if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:lm_fan,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_levenberg_marquardt_fan_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        f(ffk,xk)
-        muk = mu*norm(ffk)^delta
-
-        jk .= ForwardDiff.jacobian(f,ffk,xk)
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'ffk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:lm_fan,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_levenberg_marquardt_fan(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_levenberg_marquardt_fan_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_levenberg_marquardt_fan_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_levenberg_marquardt_fan_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        muk = mu*norm(f(xk))^delta
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        if norm(f(xn)) > gamma*norm(f(xk))
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,lb,ub)
-                if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:lm_fan,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_levenberg_marquardt_fan_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    j_inplace = !applicable(j,x)
-    
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = Array{T,2}(undef,n,n)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        if j_inplace == false
-            jk .= j(xk)
-        else
-            j(jk,xk)
-        end
-        if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
-        end
-
-        f(ffk,xk)
-        muk = mu*norm(ffk)^delta
-
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'ffk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:lm_fan,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_levenberg_marquardt_fan_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_levenberg_marquardt_fan_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    else
-        return constrained_levenberg_marquardt_fan_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    end
-
-end
-
-function constrained_levenberg_marquardt_fan_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        muk = mu*norm(f(xk))^delta
-
-        jk .= sparse(ForwardDiff.jacobian(f,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-        dk .= -(jk'jk + muk*I)\(jk'f(xk))
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        if norm(f(xn)) > gamma*norm(f(xk))
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'f(xk)
-                box_projection!(xt,lb,ub)
-                if norm(f(xt))^2 <= norm(f(xk))^2 + sigma*(f(xk)'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:lm_fan,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_levenberg_marquardt_fan_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of Algorithm 2.1 from Fan (2013) "On the Levenberg-Marquardt methods for convex constrained
-    # nonlinear equations", Journal of Industrial and Management Optimization, 9, 1, pp. 227--241.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-    dk = similar(x)
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    delta = 1.0
-    mu    = 10^(-4)
-    gamma = 0.99995
-    beta  = 0.9
-    sigma = 10^(-4)
-
-    iter = 0
-    while true
-
-        f(ffk,xk)
-        muk = mu*norm(ffk)^delta
-
-        jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-        if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
-        end
-        dk .= -(jk'jk + muk*I)\(jk'ffk)
-        xn .= xk+dk
-        box_projection!(xn,lb,ub)
-
-        f(ffn,xn)
-        if norm(ffn) > gamma*norm(ffk)
-            alpha = 1.0
-            while true
-                xt .= xk-alpha*jk'ffk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn)^2 <= norm(ffk)^2 + sigma*(ffk'jk*(xt-xk))
-                    xn .= xt
-                    break
-                else
-                    alpha = beta*alpha
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-  
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:lm_fan,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
 end
 
 ### Constrained Levenberg-Marquardt-ar
@@ -3191,12 +1582,12 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3205,11 +1596,11 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        lambdak = mu*norm(f(xk))^2
+        λk = μ*norm(f(xk))^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'f(xk))
-        d2k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k))
-        d3k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k+d2k))
+        d1k = -(jk'jk + λk*I)\(jk'f(xk))
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
         dk = d1k+d2k+d3k
 
@@ -3217,20 +1608,20 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
         box_projection!(z,lb,ub)
         s .= z-xk
 
-        if norm(f(z)) <= rho*norm(f(xk))
-            alpha = 1.0
+        if norm(f(z)) <= ρ*norm(f(xk))
+            α = 1.0
         else
-            if f(xk)'jk*dk > -gamma
+            if f(xk)'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                if norm(f(xk+alpha*s))^2 > (1+epsilon)*norm(f(xk))^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(f(xk))^2
-                    alpha = r*alpha
+                if norm(f(xk+α*s))^2 > (1+epsilon)*norm(f(xk))^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(f(xk))^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3238,7 +1629,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -3290,12 +1681,12 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3304,13 +1695,13 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
         if !all(isfinite,jk)
             error("The jacobian has non-finite elements")
         end
-        lambdak = mu*norm(ffk)^2
+        λk = μ*norm(ffk)^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'ffk)
+        d1k = -(jk'jk + λk*I)\(jk'ffk)
         f(ffn,xk+d1k)
-        d2k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d2k = -(jk'jk + λk*I)\(jk'ffn)
         f(ffn,xk+d1k+d2k)
-        d3k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d3k = -(jk'jk + λk*I)\(jk'ffn)
 
         dk = d1k+d2k+d3k
 
@@ -3319,21 +1710,21 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
         s .= z-xk
 
         f(ffn,z)
-        if norm(ffn) <= rho*norm(ffk)
-            alpha = 1.0
+        if norm(ffn) <= ρ*norm(ffk)
+            α = 1.0
         else
-            if ffk'jk*dk > -gamma
+            if ffk'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                f(ffn,xk+alpha*s)
-                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(ffk)^2
-                    alpha = r*alpha
+                f(ffn,xk+α*s)
+                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(ffk)^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3341,7 +1732,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -3417,12 +1808,12 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3436,11 +1827,11 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
             error("The jacobian has non-finite elements")
         end
 
-        lambdak = mu*norm(f(xk))^2
+        λk = μ*norm(f(xk))^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'f(xk))
-        d2k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k))
-        d3k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k+d2k))
+        d1k = -(jk'jk + λk*I)\(jk'f(xk))
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
         dk = d1k+d2k+d3k
 
@@ -3448,20 +1839,20 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
         box_projection!(z,lb,ub)
         s .= z-xk
 
-        if norm(f(z)) <= rho*norm(f(xk))
-            alpha = 1.0
+        if norm(f(z)) <= ρ*norm(f(xk))
+            α = 1.0
         else
-            if f(xk)'jk*dk > -gamma
+            if f(xk)'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                if norm(f(xk+alpha*s))^2 > (1+epsilon)*norm(f(xk))^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(f(xk))^2
-                    alpha = r*alpha
+                if norm(f(xk+α*s))^2 > (1+epsilon)*norm(f(xk))^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(f(xk))^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3469,7 +1860,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -3523,12 +1914,12 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3543,13 +1934,13 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
         end
 
         f(ffk,xk)
-        lambdak = mu*norm(ffk)^2
+        λk = μ*norm(ffk)^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'ffk)
+        d1k = -(jk'jk + λk*I)\(jk'ffk)
         f(ffn,xk+d1k)
-        d2k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d2k = -(jk'jk + λk*I)\(jk'ffn)
         f(ffn,xk+d1k+d2k)
-        d3k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d3k = -(jk'jk + λk*I)\(jk'ffn)
 
         dk = d1k+d2k+d3k
 
@@ -3558,21 +1949,21 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
         s .= z-xk
 
         f(ffn,z)
-        if norm(ffn) <= rho*norm(ffk)
-            alpha = 1.0
+        if norm(ffn) <= ρ*norm(ffk)
+            α = 1.0
         else
-            if ffk'jk*dk > -gamma
+            if ffk'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                f(ffn,xk+alpha*s)
-                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(ffk)^2
-                    alpha = r*alpha
+                f(ffn,xk+α*s)
+                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(ffk)^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3580,7 +1971,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -3654,12 +2045,12 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3668,11 +2059,11 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        lambdak = mu*norm(f(xk))^2
+        λk = μ*norm(f(xk))^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'f(xk))
-        d2k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k))
-        d3k = -(jk'jk + lambdak*I)\(jk'f(xk+d1k+d2k))
+        d1k = -(jk'jk + λk*I)\(jk'f(xk))
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
         dk = d1k+d2k+d3k
 
@@ -3680,20 +2071,20 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
         box_projection!(z,lb,ub)
         s .= z-xk
 
-        if norm(f(z)) <= rho*norm(f(xk))
-            alpha = 1.0
+        if norm(f(z)) <= ρ*norm(f(xk))
+            α = 1.0
         else
-            if f(xk)'jk*dk > -gamma
+            if f(xk)'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                if norm(f(xk+alpha*s))^2 > (1+epsilon)*norm(f(xk))^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(f(xk))^2
-                    alpha = r*alpha
+                if norm(f(xk+α*s))^2 > (1+epsilon)*norm(f(xk))^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(f(xk))^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3701,7 +2092,7 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         lenx = maximum(abs,xn-xk)
         lenf = maximum(abs,f(xn))
@@ -3753,12 +2144,12 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    sigma1 = 0.005
-    sigma2 = 0.005
-    rho    = 0.8
-    r      = 0.5
-    gamma  = 10^(-16)
-    mu     = 10^(-4)
+    σ1 = 0.005
+    σ2 = 0.005
+    ρ  = 0.8
+    r  = 0.5
+    γ  = 10^(-16)
+    μ  = 10^(-4)
 
     iter = 0
     while true
@@ -3767,13 +2158,13 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
         if !all(isfinite,nonzeros(jk))
             error("The jacobian has non-finite elements")
         end
-        lambdak = mu*norm(ffk)^2
+        λk = μ*norm(ffk)^2
 
-        d1k = -(jk'jk + lambdak*I)\(jk'ffk)
+        d1k = -(jk'jk + λk*I)\(jk'ffk)
         f(ffn,xk+d1k)
-        d2k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d2k = -(jk'jk + λk*I)\(jk'ffn)
         f(ffn,xk+d1k+d2k)
-        d3k = -(jk'jk + lambdak*I)\(jk'ffn)
+        d3k = -(jk'jk + λk*I)\(jk'ffn)
 
         dk = d1k+d2k+d3k
 
@@ -3782,21 +2173,21 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
         s .= z-xk
 
         f(ffn,z)
-        if norm(ffn) <= rho*norm(ffk)
-            alpha = 1.0
+        if norm(ffn) <= ρ*norm(ffk)
+            α = 1.0
         else
-            if ffk'jk*dk > -gamma
+            if ffk'jk*dk > -γ
                 dk = d1k
                 z .= xk+dk
                 box_projection!(z,lb,ub)
                 s .= z-xk
             end
-            alpha = 1.0
+            α = 1.0
             epsilon = 1/10
             while true
-                f(ffn,xk+alpha*s)
-                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - sigma1*alpha^2*norm(s)^2 - sigma2*alpha^2*norm(ffk)^2
-                    alpha = r*alpha
+                f(ffn,xk+α*s)
+                if norm(ffn)^2 > (1+epsilon)*norm(ffk)^2 - σ1*α^2*norm(s)^2 - σ2*α^2*norm(ffk)^2
+                    α = r*α
                     epsilon = r*epsilon
                 else
                     break
@@ -3804,7 +2195,7 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
             end
         end
 
-        xn .= xk + alpha*s
+        xn .= xk + α*s
 
         f(ffn,xn)
         lenx = maximum(abs,xn-xk)
@@ -3878,7 +2269,7 @@ function constrained_dogleg_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -3987,7 +2378,7 @@ function constrained_dogleg_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -4121,7 +2512,7 @@ function constrained_dogleg_outplace(f::Function,j::Function,x::Array{T,1},lb::A
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -4236,7 +2627,7 @@ function constrained_dogleg_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -4373,7 +2764,7 @@ function constrained_dogleg_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -4481,7 +2872,7 @@ function constrained_dogleg_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0
+    δ  = 1.0
     γ1 = 2.0
     γ2 = 0.25
     η1 = 0.25
@@ -4631,21 +3022,21 @@ function coleman_li_inplace(f::Function,j::AbstractArray{T,2},x::Array{T,1},lb::
     return df
 end
 
-function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,theta::T) where {T <: AbstractFloat}
+function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,θ::T) where {T <: AbstractFloat}
 
-    lambdak = Inf
+    λk = Inf
     for i in eachindex(gk)
         if gk[i] != 0.0
-            lambdak = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),lambdak)
+            λk = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),λk)
         else
-            lambdak = minimum((Inf,lambdak))
+            λk = minimum((Inf,λk))
         end
     end
 
     taukprime = min(-(f(x)'*jk*gk)/norm(jk*gk)^2,δ/norm(Gk*gk))
     tauk = taukprime
     if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
-        tauk = theta*lambdak
+        tauk = θ*λk
     end
 
     pc = tauk*gk
@@ -4655,41 +3046,41 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
     if norm(-pc_pkn) < 1e-13 # "division by zero errors can otherwise occur"
         return (pc+pkn)/2
     else
-        gammahat = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
+        γhat = -(f(x)+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
         if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2) >= 0.0
             r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2))^0.5
-            gammaplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
-            gammaminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
+            γplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
+            γminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
         else
-            gammaplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
-            gammaminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
+            γplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
+            γminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
         end
 
-        if gammahat > 1.0
-            gammatildaplus = Inf
+        if γhat > 1.0
+            γtildaplus = Inf
             for i in eachindex(pkn)
                 if (pkn[i]-pc[i]) != 0.0
-                    gammatildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
+                    γtildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),γtildaplus)
                 else
-                    gammatildaplus = min(Inf,gammatildaplus)
+                    γtildaplus = min(Inf,γtildaplus)
                 end
             end
-            gamma = min(gammahat,gammaplus,theta*gammatildaplus)
-        elseif gammahat < 0.0
-            gammatildaminus = -Inf
+            γ = min(γhat,γplus,θ*γtildaplus)
+        elseif γhat < 0.0
+            γtildaminus = -Inf
             for i in eachindex(pkn)
                 if (-pkn[i]+pc[i]) != 0.0
-                    gammatildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
+                    γtildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),γtildaminus)
                 else
-                    gammatildaminus = min(Inf,gammatildaminus)
+                    γtildaminus = min(Inf,γtildaminus)
                 end
             end
-            gamma = max(gammahat,gammaminus,theta*gammatildaminus)
+            γ = max(γhat,γminus,θ*γtildaminus)
         else
-            gamma = gammahat
+            γ = γhat
         end
 
-        p = (1.0-gamma)*pc + gamma*pkn
+        p = (1.0-γ)*pc + γ*pkn
 
         return p
 
@@ -4697,16 +3088,16 @@ function step_selection_outplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2
 
 end
 
-function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,theta::T) where {T <: AbstractFloat}
+function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2},jk::AbstractArray{T,2},gk::Array{T,1},pkn::Array{T,1},lb::Array{T,1},ub::Array{T,1},δ::T,θ::T) where {T <: AbstractFloat}
 
     ff = Array{T,1}(undef,length(x))
 
-    lambdak = Inf
+    λk = Inf
     for i in eachindex(gk)
         if gk[i] != 0.0
-            lambdak = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),lambdak)
+            λk = min(max(((lb[i] - x[i])/gk[i]),((ub[i]-x[i])/gk[i])),λk)
         else
-            lambdak = minimum((Inf,lambdak))
+            λk = minimum((Inf,λk))
         end
     end
 
@@ -4715,7 +3106,7 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
 
     tauk = taukprime
     if !isequal(x+taukprime*gk, box_projection(x+taukprime*gk,lb,ub))
-        tauk = theta*lambdak
+        tauk = θ*λk
     end
 
     pc = tauk*gk
@@ -4725,41 +3116,41 @@ function step_selection_inplace(f::Function,x::Array{T,1},Gk::AbstractArray{T,2}
     if norm(-pc_pkn) < 1e-13 # "division by zero errors can otherwise occur"
         return (pc+pkn)/2
     else
-        gammahat = -(ff+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
+        γhat = -(ff+jk*pc)'*jk*(-pc_pkn)/norm(jk*(-pc_pkn))^2
         if (pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2) >= 0.0
             r = ((pc'Gk^2*(pc_pkn))^2 - norm(Gk*(pc_pkn))^2*(norm(Gk*pc)^2-δ^2))^0.5
-            gammaplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
-            gammaminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
+            γplus  = (pc'*Gk^2*(pc_pkn) + r)/norm(Gk*(pc_pkn))^2
+            γminus = (pc'*Gk^2*(pc_pkn) - r)/norm(Gk*(pc_pkn))^2
         else
-            gammaplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
-            gammaminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
+            γplus  = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
+            γminus = pc'*Gk^2*(pc_pkn)/norm(Gk*(pc_pkn))^2
         end
 
-        if gammahat > 1.0
-            gammatildaplus = Inf
+        if γhat > 1.0
+            γtildaplus = Inf
             for i in eachindex(pkn)
                 if (pkn[i]-pc[i]) != 0.0
-                    gammatildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),gammatildaplus)
+                    γtildaplus = min(max(((lb[i] - x[i]- pc[i])/(pkn[i]-pc[i])),((ub[i] - x[i] - pc[i])/(pkn[i]-pc[i]))),γtildaplus)
                 else
-                    gammatildaplus = min(Inf,gammatildaplus)
+                    γtildaplus = min(Inf,γtildaplus)
                 end
             end
-            gamma = min(gammahat,gammaplus,theta*gammatildaplus)
-        elseif gammahat < 0.0
-            gammatildaminus = -Inf
+            γ = min(γhat,γplus,θ*γtildaplus)
+        elseif γhat < 0.0
+            γtildaminus = -Inf
             for i in eachindex(pkn)
                 if (-pkn[i]+pc[i]) != 0.0
-                    gammatildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),gammatildaminus)
+                    γtildaminus = min(max(-((lb[i] - x[i]- pc[i])/(-(pkn[i]-pc[i]))),-((ub[i] - x[i] - pc[i])/(-(pkn[i]-pc[i])))),γtildaminus)
                 else
-                    gammatildaminus = min(Inf,gammatildaminus)
+                    γtildaminus = min(Inf,γtildaminus)
                 end
             end
-            gamma = max(gammahat,gammaminus,theta*gammatildaminus)
+            γ = max(γhat,γminus,θ*γtildaminus)
         else
-            gamma = gammahat
+            γ = γhat
         end
 
-        p = (1.0-gamma)*pc + gamma*pkn
+        p = (1.0-γ)*pc + γ*pkn
 
         return p
 
@@ -4819,12 +3210,12 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,x::Array{T,1},lb::Ar
     push!(solution_trace.trace,solver_state)
    
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64
     for i in eachindex(x)
@@ -4851,21 +3242,21 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,x::Array{T,1},lb::Ar
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
-        α = max(theta,1.0-norm(f(xk)))
+        α = max(θ,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -4923,12 +3314,12 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,x::Array{T,1},lb::Arr
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64
     for i in eachindex(x)
@@ -4955,22 +3346,22 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,x::Array{T,1},lb::Arr
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
-        α = max(theta,1.0-norm(ffk))
+        α = max(θ,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             f(ffn,xk+p)
             ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -5052,12 +3443,12 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,j::Function,x::Array
     push!(solution_trace.trace,solver_state)
     
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64
     for i in eachindex(x)
@@ -5089,21 +3480,21 @@ function constrained_dogleg_bmp_solver_outplace(f::Function,j::Function,x::Array
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'f(xk)
    
-        α = max(theta,1.0-norm(f(xk)))
+        α = max(θ,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -5163,12 +3554,12 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,j::Function,x::Array{
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64
     for i in eachindex(x)
@@ -5201,22 +3592,22 @@ function constrained_dogleg_bmp_solver_inplace(f::Function,j::Function,x::Array{
         Gk .= Diagonal(df.^(-1/2))
         gk .= -df.*jk'ffk
    
-        α = max(theta,1.0-norm(ffk))
+        α = max(θ,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             f(ffn,xk+p)
             ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -5296,12 +3687,12 @@ function constrained_dogleg_bmp_solver_sparse_outplace(f::Function,x::Array{T,1}
     push!(solution_trace.trace,solver_state)
     
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64  
     for i in eachindex(x)
@@ -5328,21 +3719,21 @@ function constrained_dogleg_bmp_solver_sparse_outplace(f::Function,x::Array{T,1}
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'f(xk)
    
-        α = max(theta,1.0-norm(f(xk)))
+        α = max(θ,1.0-norm(f(xk)))
         pkn .= xk-jk\f(xk)
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             ρ = (norm(f(xk)) - norm(f(xk+p))) / (norm(f(xk)) - norm(f(xk) + jk'*p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_outplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -5400,12 +3791,12 @@ function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    δ = 1.0 
+    δ  = 1.0 
     γ1 = 2.0
     γ2 = 0.25
-    theta  = 0.99995 
-    beta1  = 0.5 
-    beta2  = 0.9 
+    θ  = 0.99995 
+    β1 = 0.5 
+    β2 = 0.9 
 
     # Replace infinities with largest possible Float64
     for i in eachindex(x)
@@ -5432,22 +3823,22 @@ function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},
         Gk .= sparse(Diagonal(df.^(-1/2)))
         gk .= -df.*jk'ffk
    
-        α = max(theta,1.0-norm(ffk))
+        α = max(θ,1.0-norm(ffk))
         pkn .= xk-jk\ffk
         box_projection!(pkn,lb,ub)
         pkn .= α*(pkn-xk)
 
-        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+        p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
     
         while true
             f(ffn,xk+p)
             ρ = (norm(ffk) - norm(ffn)) / (norm(ffk) - norm(ffk + jk'p))
-            if ρ < beta1 # linear approximation is poor fit so reduce the trust region
+            if ρ < β1 # linear approximation is poor fit so reduce the trust region
                 δ = min(γ2*δ,0.5*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
-            elseif ρ > beta2 # linear approximation is good fit so expand the trust region
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
+            elseif ρ > β2 # linear approximation is good fit so expand the trust region
                 δ = max(δ,γ1*norm(p))
-                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,theta)
+                p .= step_selection_inplace(f,xk,Gk,jk,gk,pkn,lb,ub,δ,θ)
             end
             xn .= xk .+ p
             break
@@ -5476,6 +3867,7 @@ function constrained_dogleg_bmp_solver_sparse_inplace(f::Function,x::Array{T,1},
     return results
  
 end
+
 
 ### Constrained Newton-Krylov
 
@@ -5525,10 +3917,10 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     g(x) = 0.5*norm(f(x))^2
@@ -5542,37 +3934,37 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
             if !all(isfinite,jk)
                 error("The jacobian has non-finite elements")
             end    
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
+            dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                if norm(f(xt)) <= (1.0 - t*α*(1-ηk))*norm(f(xk))
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'f(xk)
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
+                if g(xt) <= g(xk) + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -5626,10 +4018,10 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     flag_ng = false
@@ -5641,39 +4033,39 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
             if !all(isfinite,jk)
                 error("The jacobian has non-finite elements")
             end    
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
+            dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
+                if norm(ffn) <= (1.0 - t*α*(1-ηk))*norm(ffk)
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'ffk
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
+                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -5751,10 +4143,10 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     g(x) = 0.5*norm(f(x))^2
@@ -5773,37 +4165,37 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
                 error("The jacobian has non-finite elements")
             end
     
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
+            dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                if norm(f(xt)) <= (1.0 - t*α*(1-ηk))*norm(f(xk))
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'f(xk)
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
+                if g(xt) <= g(xk) + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -5859,10 +4251,10 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     flag_ng = false
@@ -5880,39 +4272,39 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
             end
     
             f(ffk,xk)
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
+            dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
+                if norm(ffn) <= (1.0 - t*α*(1-ηk))*norm(ffk)
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'ffk
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
+                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -5988,10 +4380,10 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     g(x) = 0.5*norm(f(x))^2
@@ -6005,37 +4397,37 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
             if !all(isfinite,nonzeros(jk))
                 error("The jacobian has non-finite elements")
             end    
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
+            dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
+                if norm(f(xt)) <= (1.0 - t*α*(1-ηk))*norm(f(xk))
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'f(xk)
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
+                if g(xt) <= g(xk) + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -6089,10 +4481,10 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4#1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax = 50
 
     flag_ng = false
@@ -6104,39 +4496,39 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
             if !all(isfinite,nonzeros(jk))
                 error("The jacobian has non-finite elements")
             end    
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
+            dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
+                if norm(ffn) <= (1.0 - t*α*(1-ηk))*norm(ffk)
                     xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = -jk'ffk
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                xt .= xk+alpha*dk
+                xt .= xk+α*dk
                 box_projection!(xt,lb,ub)
                 f(ffn,xt)
-                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
+                if 0.5*norm(ffn)^2 <=  0.5*norm(ffk)^2 + σ*dk'*(xt - xk)
                     xn .= xt
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -6161,756 +4553,6 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
   
     f(ffn,xn)
     results = SolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-### Constrained Newton-Krylov-fs
-
-function constrained_newton_krylov_fs(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_krylov_fs_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    else
-        return constrained_newton_krylov_fs_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    end
-
-end
-
-function constrained_newton_krylov_fs_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = Array{T,2}(undef,n,n)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    g(x) = 0.5*norm(f(x))^2
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            jk .= ForwardDiff.jacobian(f,xk)
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end    
-            kk, status = gmres(jk,-0.5*f(xk),xk,etak,krylovdim)
-            jk .= ForwardDiff.jacobian(f,xk-kk) # Here xk-kk is not guaranteed to be inside the box
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'f(xk)
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:nk_fs,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_newton_krylov_fs_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = Array{T,2}(undef,n,n)
-     
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            jk .= ForwardDiff.jacobian(f,ffk,xk)
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end    
-            kk, status = gmres(jk,-0.5*ffk,xk,etak,krylovdim)
-            jk .= ForwardDiff.jacobian(f,ffn,xk-kk) # Here xk-kk is not guaranteed to be inside the box
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end    
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'ffk
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if 0.5*norm(ffn)^2 <= 0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:nk_fs,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_newton_krylov_fs(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_krylov_fs_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    else
-        return constrained_newton_krylov_fs_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    end
-
-end
-
-function constrained_newton_krylov_fs_outplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    j_inplace = !applicable(j,x)
-    
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = Array{T,2}(undef,n,n)
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    g(x) = 0.5*norm(f(x))^2
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            if j_inplace == false
-                jk .= j(xk)
-            else
-                j(jk,xk)
-            end
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end
-    
-            kk, status = gmres(jk,-0.5*f(xk),xk,etak,krylovdim)
-
-            if j_inplace == false
-                jk .= j(xk-kk)  # Here xk-kk is not guaranteed to be inside the box
-            else
-                j(jk,xk-kk)  # Here xk-kk is not guaranteed to be inside the box
-            end
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end
-    
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'f(xk)
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:nk_fs,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_newton_krylov_fs_inplace(f::Function,j::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    j_inplace = !applicable(j,x)
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = Array{T,2}(undef,n,n)
-     
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            if j_inplace == false
-                jk .= j(xk)
-            else
-                j(jk,xk)
-            end
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end
-    
-            f(ffk,xk)
-            kk, status = gmres(jk,-0.5*ffk,xk,etak,krylovdim)
-
-            if j_inplace == false
-                jk .= j(xk-kk) # Here xk-kk is not guaranteed to be inside the box
-            else
-                j(jk,xk-kk) # Here xk-kk is not guaranteed to be inside the box
-            end
-            if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
-            end
-    
-            f(ffn,xk-kk)
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'ffk
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if 0.5*norm(ffn)^2 <= 0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:nk_fs,x,xn,ffn,lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_newton_krylov_fs_sparse(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    if box_check(lb,ub) !== true # Check that box is formed correctly
-        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
-    end
-
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            box_projection!(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
-
-    f_inplace = !applicable(f,x) # Check if function is inplace
-
-    if f_inplace == false
-        return constrained_newton_krylov_fs_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    else
-        return constrained_newton_krylov_fs_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    end
-
-end
-
-function constrained_newton_krylov_fs_sparse_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = sparse(Array{T,2}(undef,n,n))
-
-    # Initialize solution trace
-    solver_state = SolverState(0,NaN,maximum(abs,f(x)))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    g(x) = 0.5*norm(f(x))^2
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            jk .= sparse(ForwardDiff.jacobian(f,xk))
-            if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
-            end    
-            kk, status = gmres(jk,-0.5*f(xk),xk,etak,krylovdim)
-            jk .= sparse(ForwardDiff.jacobian(f,xk-kk)) # Here xk-kk is not guaranteed to be inside the box
-            if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
-            end    
-            dk, status = gmres(jk,-f(xk),xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if norm(f(xt)) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'f(xk)
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                if g(xt) <= g(xk) + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,f(xn))
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    results = SolverResults(:nk_fs,x,xn,f(xn),lenx,lenf,iter,solution_trace)
-
-    return results
- 
-end
-
-function constrained_newton_krylov_fs_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1};xtol::T=1e-8,ftol::T=1e-8,maxiters::S=100,krylovdim::S=30) where {T <: AbstractFloat, S <: Integer}
-
-    # This is an implementation of the approach in Frontini and Sormani (2004) "Third-order methods from
-    # quadrature formulae for solving systems of nonlinear equations", Applied Mathematics and Computation, 
-    # 149, pp. 771--782.
-
-    # Modified to use Krylov methods, a globalization step, and to allow for box-constraints by Richard Dennis.
-
-    n = length(x)
-    xk = copy(x)
-    xn = similar(x)
-    xt = similar(x)
-
-    lenx = zero(T)
-    lenf = zero(T)
-
-    jk = sparse(Array{T,2}(undef,n,n))
-     
-    ffk = Array{T,1}(undef,n)
-    ffn = Array{T,1}(undef,n)
-
-    # Initialize solution trace
-    f(ffk,xk)
-    solver_state = SolverState(0,NaN,maximum(abs,ffk))
-    solution_trace = SolverTrace(Array{SolverState}(undef,0))
-    push!(solution_trace.trace,solver_state)
-
-    # Initialize solver-parameters
-    etak = 1e-4
-    beta = 0.9
-    t = 1e-4
-    sigma = 1e-4
-    mmax = 50
-
-    flag_ng = false
-    iter = 0
-    while true
-
-        if flag_ng == false
-
-            jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-            if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
-            end    
-            kk, status = gmres(jk,-0.5*ffk,xk,etak,krylovdim)
-            jk .= sparse(ForwardDiff.jacobian(f,ffn,xk-kk)) # Here xk-kk is not guaranteed to be inside the box
-            if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
-            end    
-            dk, status = gmres(jk,-ffk,xk,etak,krylovdim)
-
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
-                    xn .= xt
-                    etak = (1.0 - alpha*(1.0 - etak))
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                    flag_ng = true
-                end
-            end
-        else
-            dk = -jk'ffk
-            alpha = 1.0
-            m = 1
-            while m <= mmax
-                xt .= xk+alpha*dk
-                box_projection!(xt,lb,ub)
-                f(ffn,xt)
-                if 0.5*norm(ffn)^2 <= 0.5*norm(ffk)^2 + sigma*dk'*(xt - xk)
-                    xn .= xt
-                    flag_ng = false
-                    break
-                else
-                    alpha = beta*alpha
-                    m += 1
-                end
-            end
-        end
-
-        f(ffn,xn)
-        lenx = maximum(abs,xn-xk)
-        lenf = maximum(abs,ffn)
-
-        xk .= xn
-
-        iter += 1
-
-        solver_state = SolverState(iter,lenx,lenf)
-        push!(solution_trace.trace,solver_state)
-
-        if iter >= maxiters || (lenx <= xtol || lenf <= ftol)
-            break
-        end
-
-    end
-  
-    f(ffn,xn)
-    results = SolverResults(:nk_fs,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -6959,10 +4601,10 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak  = 1e-4
-    beta  = 0.9
-    t     = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax  = 50
 
     g(x) = 0.5*norm(f(x))^2
@@ -6972,37 +4614,33 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
     while true
 
         if flag_ng == false
-            dk, status = jacobian_free_gmres(f,xk,etak,krylovdim) # Using inexact Arnoldi (could use restarted)
+            dk, status = jacobian_free_gmres(f,xk,ηk,krylovdim) # Using inexact restarted Arnoldi (could use inexact)
 
-            if status == false
-                error("Restarted GMRES did not converge")
-            end
-
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                if norm(f(box_projection(xk+alpha*dk,lb,ub))) <= (1.0 - t*alpha*(1-etak))*norm(f(xk))
-                    xn = box_projection(xk+alpha*dk,lb,ub)
-                    etak = (1.0 - alpha*(1.0 - etak))
+                if norm(f(box_projection(xk+α*dk,lb,ub))) <= (1.0 - t*α*(1-ηk))*norm(f(xk))
+                    xn = box_projection(xk+α*dk,lb,ub)
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
+        else # Take a Newton step
             dk = - ForwardDiff.gradient(g,xk)
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
-                if g(box_projection(xk+alpha*dk,lb,ub)) <= g(xk) + sigma*dk'*(box_projection(xk+alpha*dk,lb,ub) .- xk)
-                    xn = box_projection(xk+alpha*dk,lb,ub)
+                if g(box_projection(xk+α*dk,lb,ub)) <= g(xk) + σ*dk'*(box_projection(xk+α*dk,lb,ub) .- xk)
+                    xn = box_projection(xk+α*dk,lb,ub)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -7052,53 +4690,53 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
     push!(solution_trace.trace,solver_state)
 
     # Initialize solver-parameters
-    etak  = 1e-4
-    beta  = 0.9
-    t     = 1e-4
-    sigma = 1e-4
+    ηk = 1e-4
+    β  = 0.9
+    t  = 1e-4
+    σ  = 1e-4
     mmax  = 50
 
-    g(x) = 0.5*norm(f(x))^2
+    function g(x)
+        ftemp = Array{Number,1}(undef,length(x))
+        f(ftemp,x)
+        return 0.5*norm(ftemp)^2
+    end
 
     flag_ng = false
     iter = 0
     while true
 
         if flag_ng == false
-            dk, status = jacobian_free_gmres_inplace(f,xk,etak,krylovdim) # Using inexact Arnoldi (could use restarted)
+            dk, status = jacobian_free_gmres_inplace(f,xk,ηk,krylovdim) # Using inexact restarted Arnoldi (could use inexact)
 
-            if status == false
-                error("Restarted GMRES did not converge")
-            end
-
-            alpha = 1.0
+            α = 1.0
             m = 1
             while m <= mmax
                 f(ffk,xk)
-                f(ffn,box_projection(xk+alpha*dk,lb,ub))
-                if norm(ffn) <= (1.0 - t*alpha*(1-etak))*norm(ffk)
-                    xn = box_projection(xk+alpha*dk,lb,ub)
-                    etak = (1.0 - alpha*(1.0 - etak))
+                f(ffn,box_projection(xk+α*dk,lb,ub))
+                if norm(ffn) <= (1.0 - t*α*(1-ηk))*norm(ffk)
+                    xn = box_projection(xk+α*dk,lb,ub)
+                    ηk = min(1.0 - α*(1.0 - ηk),1e-3)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                     flag_ng = true
                 end
             end
-        else
-            dk = - ForwardDiff.gradient(g,ffk,xk)
-            alpha = 1.0
+        else # Take a Newton step
+            dk = -ForwardDiff.gradient(g,xk)
+            α = 1.0
             m = 1
             while m <= mmax
-                f(ffn,box_projection(xk+alpha*dk,lb,ub))
-                if 0.5*norm(ffn)^2 <= 0.5*norm(ffk) + sigma*dk'*(box_projection(xk+alpha*dk,lb,ub) .- xk)
-                    xn = box_projection(xk+alpha*dk,lb,ub)
+                f(ffn,box_projection(xk+α*dk,lb,ub))
+                if 0.5*norm(ffn)^2 <= 0.5*norm(ffk) + σ*dk'*(box_projection(xk+α*dk,lb,ub) .- xk)
+                    xn = box_projection(xk+α*dk,lb,ub)
                     flag_ng = false
                     break
                 else
-                    alpha = beta*alpha
+                    α = β*α
                     m += 1
                 end
             end
@@ -7136,18 +4774,6 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
         elseif sparsejac == :yes
             return constrained_newton_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
         end
-    elseif method == :nr_ms
-        if sparsejac == :no
-            return constrained_newton_ms(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        elseif sparsejac == :yes
-            return constrained_newton_ms_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        end
-    elseif method == :ttr
-        if sparsejac == :no
-            return constrained_trust_region(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        elseif sparsejac == :yes
-            return constrained_trust_region_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        end
     elseif method == :lm
         if sparsejac == :no
             return constrained_levenberg_marquardt(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
@@ -7159,12 +4785,6 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
             return constrained_levenberg_marquardt_kyf(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
         elseif sparsejac == :yes
             return constrained_levenberg_marquardt_kyf_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        end
-    elseif method == :lm_fan
-        if sparsejac == :no
-            return constrained_levenberg_marquardt_fan(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-        elseif sparsejac == :yes
-            return constrained_levenberg_marquardt_fan_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
         end
     elseif method == :lm_ar
         if sparsejac == :no
@@ -7190,12 +4810,6 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
         elseif sparsejac == :yes
             return constrained_newton_krylov_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
         end
-    elseif method == :nk_fs
-        if sparsejac == :no
-            return constrained_newton_krylov_fs(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-        elseif sparsejac == :yes
-            return constrained_newton_krylov_fs_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-        end
     elseif method == :jfnk
         return constrained_jacobian_free_newton_krylov(f,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     else
@@ -7208,16 +4822,10 @@ function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf
 
     if method == :nr
         return constrained_newton(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :nr_ms
-        return constrained_newton_ms(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :ttr
-        return constrained_trust_region(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :lm
         return constrained_levenberg_marquardt(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :lm_kyf
         return constrained_levenberg_marquardt_kyf(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
-    elseif method == :lm_fan
-        return constrained_levenberg_marquardt_fan(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :lm_ar
         return constrained_levenberg_marquardt_ar(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :dogleg
@@ -7226,8 +4834,6 @@ function nlboxsolve(f::Function,j::Function,x::Array{T,1},lb::Array{T,1} = [-Inf
         return constrained_dogleg_bmp_solver(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters)
     elseif method == :nk
         return constrained_newton_krylov(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
-    elseif method == :nk_fs
-        return constrained_newton_krylov_fs(f,j,x,lb,ub,xtol=xtol,ftol=ftol,maxiters=maxiters,krylovdim=krylovdim)
     else
         error("Your chosen solution method is not supported")
     end
