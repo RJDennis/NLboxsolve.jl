@@ -116,13 +116,6 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
         end
 
         if rank(jk) == n # Compute a Newton step
-            p .= -jk\f(xk)
-        else # Compute a Levenberg-Marquardt step
-            λ = 0.001*norm(f(xk))^2
-            p .= -(jk'jk + λ*I)\(jk'f(xk))
-        end
-
-        if rank(jk) == n # Compute a Newton step
             xn .= xk - jk\f(xk)
         else # Compute a Levenberg-Marquardt step
             λ = 0.001*norm(f(xk))^2
