@@ -14,28 +14,18 @@ export SolverState,
        SolverResults
 
 export constrained_newton,
-       constrained_newton_ms,
-       constrained_levenberg_marquardt,
        constrained_levenberg_marquardt_kyf,
-       constrained_levenberg_marquardt_fan,
        constrained_levenberg_marquardt_ar,
        constrained_trust_region,
        constrained_dogleg_solver,
-       constrained_dogleg_bmp_solver,
        constrained_newton_krylov,
-       constrained_newton_krylov_fs,
        constrained_jacobian_free_newton_krylov,
        constrained_newton_sparse,
-       constrained_newton_ms_sparse,
-       constrained_levenberg_marquardt_sparse,
        constrained_levenberg_marquardt_kyf_sparse,
-       constrained_levenberg_marquardt_fan_sparse,
        constrained_levenberg_marquardt_ar_sparse,
        constrained_trust_region_sparse,
        constrained_dogleg_solver_sparse,
-       constrained_dogleg_bmp_solver_sparse,
        constrained_newton_krylov_sparse,
-       constrained_newton_krylov_fs_sparse,
        nlboxsolve
 
 end
