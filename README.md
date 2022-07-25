@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
 
-So far the collection contains eight algorithms: one based on Newton's (or Newton-Raphson's) method, three based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.  Experience suggests that some algorithms can work better than others for some problems, or some algorithms work on a problem where other fail, and no one algorithm dominates for all problems.
+The collection contains seven algorithms: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
 
 Installing
 ----------
@@ -48,11 +48,10 @@ The solution algorithms
 The solution algorithms are the following:
 
 - Constrained Newton-Raphson (method = :nr)
-- Constrained Levenberg-Marquardt (method = :lm)
 - Kanzow, Yamashita, and Fukushima (2004) (method = :lm_kyf)
 - Amini and Rostami (2016) (method = :lm_ar) (this is the default method)
-- Trust region Dogleg method (method = :dogleg) (based on Nocedal and Wright, 2006)
-- Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg_bmp)
+- Kimiaei (2017) (method = :tr) (this is a nonmonotone adaptive trust region method)
+- Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg) (Sometimes known as CoDoSol)
 - Chen and Vuik (2016) (method = :nk)
 - Jacobian-free Newton Krylov (method = :jfnk)
 
@@ -222,4 +221,4 @@ Chen, J., and C. Vuik, (2016), "Globalization Technique for Projected Newton-Kry
 
 Kanzow, C., Yamashita, N., and M. Fukushima, (2004), "Levenberg–Marquardt Methods with Strong Local Convergence Properties for Solving Nonlinear Equations with Convex Constraints", *Journal of Computational and Applied Mathematics*, 172, pp. 375–397.
 
-Nocedal, J and S. Wright, (2006), Numerical Optimization, second edition, Springer.
+Kimiaei, M., (2017), "A New-Class of Nonmonotone Adaptive Trust-Region Methods for Nonlinear Equations with Box Constraints", *Calcolo*, 54, pp. 769-812.
