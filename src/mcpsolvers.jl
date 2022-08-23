@@ -16,18 +16,7 @@ end
 
 function mid(x,y,z)
 
-    middle_value = sort(real.([x,y,z]))[2] # real is only needed here to support the :jfnk method
-
-    return middle_value
-
-end
-
-function MCP_mid(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
-
-    h(x) = x - mid.(lb,ub,x-f(x))
-    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
-
-    results = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    middle_value = MCPSolverResults(soln.solution_method,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
     return results
 
@@ -39,13 +28,13 @@ function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Arr
 
     soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
 
-    results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    results = MCPSolverResults(soln.solution_method,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
     return results
 
 end
 
-function MCPsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:fb,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
+function mcpsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:fb,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if reformulation == :mid
         return MCP_mid(f,x,lb,ub,xtol,ftol,iterations,method,sparsejac)

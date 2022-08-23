@@ -222,7 +222,8 @@ As previously, the key elements to a problem are a vector-function containing th
 soln = mcpsolve(F,x,lb,ub)
 ```
 
-The solvers that underpin ```mcpsolve()``` are those accessable through the ```nlboxsolve()``` function.
+- At the moment the function, ```F(x)``` cannot be in-place.
+- The solvers that underpin ```mcpsolve()``` are those accessable through the ```nlboxsolve()``` function.
 
 The general function call allows up to seven keyword arguments, for example:
 
