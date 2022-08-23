@@ -1,14 +1,14 @@
 # NLboxsolve.jl
 
 Introduction
-------------
+============
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution.  The package can also solve mixed complementarity problems, leveraging the non-linear box-solvers to do so.
 
-The collection contains seven algorithms: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
+The collection contains seven algorithms for solving box-constrained non-linear systems: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
 
 Installing
-----------
+==========
 
 NLboxsolve.jl is a registered package that can be installed using the package manager.  To do so, type the following in the REPL:
 
@@ -18,10 +18,10 @@ Pkg.add("NLboxsolve")
 ```
 
 Solving box-constrained systems of equations
---------------------------------------------
+============================================
 
 Formulating a problem
-=====================
+---------------------
 
 The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
 
@@ -46,7 +46,7 @@ soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,method=:jfnk,spar
 where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the two Newton-Krylov methods (and ignored for the other methods).
 
 The solution algorithms
-=======================
+-----------------------
 
 The solution algorithms are the following:
 
@@ -72,7 +72,7 @@ Each algorithm returns the solution in a structure that has the following fields
 which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```. The path taken by the solver is stored in the ```trace``` field.
 
 Examples
-========
+--------
 
 As a first example, consider the following 'fivediagonal' function:
 
@@ -206,15 +206,15 @@ soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 ```
 
 Solving Mixed Complementarity Problems
---------------------------------------
+======================================
 
-Mixed complementarity problems are problems that can be expressed as: $x_i ge 0$, $f_i(x) ge 0$ and $x_i f_i(x) = 0$, for all $i = 1,...n$, with $l le x le u$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows two reformulations:
+Mixed complementarity problems are problems that can be expressed as: $x_i \ge 0$, $f_i(x) \ge 0$ and $x_i f_i(x) = 0$, for all $i = 1,...n$, with $l le x le u$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows two reformulations:
 
 - The 'mid' reformulation recasts the problem as: $h(x) = x - mid(l,u,x-f(x))$ and seeks to solve $h(x) = 0$, $l le x le u$.  This reformulation is selected with ```reformulation = :mid```.
 - The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = sqrt(x_i^2 + f_(x)^2) - x_i - f_i(x).  This reformulation is selected with ```reformulation = :fb``` (this reformulation is the default).
 
 Formulating a problem
-=====================
+---------------------
 
 The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
 
@@ -233,7 +233,7 @@ soln = mcpsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,reformulation=:mid,
 where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```reformulation``` selects the transform used to reformulate the problem (default = :fb), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the Newton-Krylov methods (and ignored for the other methods).
 
 Example
-=======
+-------
 
 Consider the following function:
 
@@ -258,7 +258,7 @@ soln = mcpsolve(simple,x0,lb,ub,xtol = 1e-8,ftol=1e-8,reformulation=:mid,method=
 ```
 
 Related packages
-----------------
+================
 
 - NLsolve.jl
 - Complementarity.jl
@@ -266,7 +266,7 @@ Related packages
 - NonlinearSolve.jl
 
 References
-----------
+==========
 
 Amini, K., and F. Rostami, (2016), "Three-Steps Modified Levenberg-Marquardt Method with a New Line Search for Systems of Nonlinear Equations", *Journal of Computational and Applied Mathematics*, 300, pp. 30–42.
 
