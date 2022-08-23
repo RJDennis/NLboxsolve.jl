@@ -211,7 +211,7 @@ Solving Mixed Complementarity Problems
 Mixed complementarity problems are problems that can be expressed as: $x_i \ge 0$, $f_i(x) \ge 0$ and $x_i f_i(x) = 0$, for all $i = 1,...n$, with $l \le x \le u$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows two reformulations:
 
 - The "mid" reformulation recasts the problem as: $h_i(x) = x_i - mid(l_i,u_i,x_i-f_i(x))$ and seeks to solve $h(x) = 0$, $l \le x \le u$.  This reformulation is selected with ```reformulation = :mid```.
-- The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = sqrt(x_i^2 + f_(x)^2) - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :fb``` (this reformulation is the default).
+- The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = \sqrt(x_i^2 + f_i(x)^2) - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :fb``` (this reformulation is the default).
 
 Formulating a problem
 ---------------------
