@@ -16,7 +16,7 @@ end
 
 function mid(x,y,z)
 
-    middle_value = MCPSolverResults(soln.solution_method,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    middle_value = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
     return results
 
@@ -28,7 +28,7 @@ function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Arr
 
     soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
 
-    results = MCPSolverResults(soln.solution_method,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
     return results
 
