@@ -4777,7 +4777,7 @@ function nlboxsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in ea
     elseif method == :lm_ar
         if sparsejac == :no
             return constrained_levenberg_marquardt_ar(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
-        elseif sparsejav == :yes
+        elseif sparsejac == :yes
             return constrained_levenberg_marquardt_ar_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
         end
     elseif method == :tr
