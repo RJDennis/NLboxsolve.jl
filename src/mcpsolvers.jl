@@ -1,3 +1,11 @@
+function mid(x,y,z)
+
+    middle_value = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    
+    return results
+
+end
+
 function fischer_burmeister(x,l,u,y)
 
     fischer_burmeister(a,b) = sqrt(a^2+b^2) - a - b
@@ -14,9 +22,12 @@ function fischer_burmeister(x,l,u,y)
 
 end
 
-function mid(x,y,z)
+function MCP_mid(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
-    middle_value = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    h(x) = x - mid.(lb,ub,x-f(x))
+    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+
+    results = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
     return results
 
