@@ -143,7 +143,7 @@ To obtain one solution we can use:
 x0 = [-0.6, 0.5]
 lb = [-0.5, -0.2]
 ub = [0.5, 0.4]
-soln_c = nlboxsolve(example,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm_ar)
+soln_c = nlboxsolve(example,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
 To obtain a second solution:
@@ -152,7 +152,7 @@ To obtain a second solution:
 x0 = [0.8, 0.6]
 lb = [0.5, 0.0]
 ub = [1.0, 1.0]
-soln_d = nlboxsolve(example!,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm_ar)
+soln_d = nlboxsolve(example!,x0,lb,ub,ftol=1e-15,xtol=1e-15,method=:lm)
 ```
 
 As a final example---one involving the use of a user defined Jacobian---, consider the problem borrowed from the package NLsolve.jl:
