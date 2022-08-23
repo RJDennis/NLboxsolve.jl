@@ -3,7 +3,7 @@
 Introduction
 ------------
 
-NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution. This problem is similar, but different, to mixed complementarity problems (for those see Complementarity.jl or NLsolve.jl).
+NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution.  The package can also solve mixed complementarity problems, leveraging the non-linear box-solvers to do so.
 
 The collection contains seven algorithms: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
 
@@ -17,8 +17,11 @@ using Pkg
 Pkg.add("NLboxsolve")
 ```
 
+Solving box-constrained systems of equations
+--------------------------------------------
+
 Formulating a problem
----------------------
+=====================
 
 The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
 
@@ -40,10 +43,10 @@ Of course there are optional arguments.  The general function call allows up to 
 soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,method=:jfnk,sparsejac=:yes,krylovdim=20)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the three Newton-Krylov methods (and ignored for the other methods).
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the two Newton-Krylov methods (and ignored for the other methods).
 
 The solution algorithms
------------------------
+=======================
 
 The solution algorithms are the following:
 
@@ -69,7 +72,7 @@ Each algorithm returns the solution in a structure that has the following fields
 which are (hopefully) self-explanatory, but to be explicit the value for ```x``` that satisfies ```F(x) = 0``` is given by the ```zero``` field.  The nature of the convergence (or non-convergence) can be determined from ```fzero```, ```xdist```, ```fdist```, and ```iters```. The path taken by the solver is stored in the ```trace``` field.
 
 Examples
---------
+========
 
 As a first example, consider the following 'fivediagonal' function:
 
@@ -200,6 +203,58 @@ soln_e = nlboxsolve(f,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 soln_f = nlboxsolve(f,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 soln_g = nlboxsolve(f!,j,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
+```
+
+Solving Mixed Complementarity Problems
+--------------------------------------
+
+Mixed complementarity problems are problems that can be expressed as: $x_i ge 0$, $f_i(x) ge 0$ and $x_i f_i(x) = 0$, for all $i = 1,...n$, with $l le x le u$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows two reformulations:
+
+- The 'mid' reformulation recasts the problem as: $h(x) = x - mid(l,u,x-f(x))$ and seeks to solve $h(x) = 0$, $l le x le u$.  This reformulation is selected with ```reformulation = :mid```.
+- The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = sqrt(x_i^2 + f_(x)^2) - x_i - f_i(x).  This reformulation is selected with ```reformulation = :fb``` (this reformulation is the default).
+
+Formulating a problem
+=====================
+
+The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
+
+```julia
+soln = mcpsolve(F,x,lb,ub)
+```
+
+The solvers that underpin ```mcpsolve()``` are those accessable through the ```nlboxsolve()``` function.
+
+The general function call allows up to seven keyword arguments, for example:
+
+```julia
+soln = mcpsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,reformulation=:mid,method=:nr,sparsejac=:yes,krylovdim=20)
+```
+
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```reformulation``` selects the transform used to reformulate the problem (default = :fb), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the Newton-Krylov methods (and ignored for the other methods).
+
+Example
+=======
+
+Consider the following function:
+
+```julia
+function simple(x::Array{T,1}) where {T<:Number}
+
+    f = Array{T,1}(undef,length(x))
+
+    f[1] = x[1]^3 - 8
+    f[2] = x[2] - x[3] + x[2]^3 + 3
+    f[3] = x[2] + x[3] + 2*x[3]^3 - 3
+    f[4] = x[4] + 2*x[4]^3
+
+    return f
+
+end
+
+x0 = [0.5,0.5,0.5,0.5]
+lb = [-1.0,-1.0,-1.0,-1.0]
+ub = [1.0,1.0,1.0,1.0]
+soln = mcpsolve(simple,x0,lb,ub,xtol = 1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
 ```
 
 Related packages
