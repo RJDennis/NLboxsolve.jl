@@ -40,7 +40,7 @@ The function, ```F``` and the Jacobian function, ``` J``` can be in-place, meani
 Of course there are optional arguments.  The general function call allows up to six keyword arguments, for example:
 
 ```julia
-soln = nlboxsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,method=:jfnk,sparsejac=:yes,krylovdim=20)
+soln = nlboxsolve(F,x,lb,ub,xtol=1e-10,ftol=1e-10,iterations=200,method=:jfnk,sparsejac=:yes,krylovdim=20)
 ```
 
 where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the two Newton-Krylov methods (and ignored for the other methods).
@@ -227,7 +227,7 @@ The solvers that underpin ```mcpsolve()``` are those accessable through the ```n
 The general function call allows up to seven keyword arguments, for example:
 
 ```julia
-soln = mcpsolve(F,x,l,u,xtol=1e-10,ftol=1e-10,iterations=200,reformulation=:mid,method=:nr,sparsejac=:yes,krylovdim=20)
+soln = mcpsolve(F,x,lb,ub,xtol=1e-10,ftol=1e-10,iterations=200,reformulation=:mid,method=:nr,sparsejac=:yes,krylovdim=20)
 ```
 
 where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```reformulation``` selects the transform used to reformulate the problem (default = :fb), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the Newton-Krylov methods (and ignored for the other methods).
@@ -254,7 +254,7 @@ end
 x0 = [0.5,0.5,0.5,0.5]
 lb = [-1.0,-1.0,-1.0,-1.0]
 ub = [1.0,1.0,1.0,1.0]
-soln = mcpsolve(simple,x0,lb,ub,xtol = 1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
+soln = mcpsolve(simple,x0,lb,ub,xtol=1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
 ```
 
 Related packages
