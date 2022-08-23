@@ -216,7 +216,7 @@ Mixed complementarity problems are problems that can be expressed as: $x_i \ge 0
 Formulating a problem
 ---------------------
 
-The key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
+As previously, the key elements to a problem are a vector-function containing the system of equations to be solved: ```F(x)```, an initial guess at the solution, ```x``` (1d-array), and the lower, ```lb``` (1d-array with default enteries equaling -Inf), and upper, ```ub``` (1d-array with default enteries equaling Inf) bounds that form the box-constraint.  With these objects defined, we solve the system using:
 
 ```julia
 soln = mcpsolve(F,x,lb,ub)
