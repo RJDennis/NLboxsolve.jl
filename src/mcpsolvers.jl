@@ -1,8 +1,8 @@
 function mid(x,y,z)
 
-    middle_value = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
-    
-    return results
+    middle_value = sort(real.([x,y,z]))[2] # real is only needed here to support the :jfnk method
+
+    return middle_value
 
 end
 
