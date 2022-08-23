@@ -140,7 +140,7 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
   
     end
   
-    results = SolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -198,7 +198,7 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
     end
 
     f(ffk,xn)
-    results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -282,7 +282,7 @@ function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},lb::A
   
     end
   
-    results = SolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -348,7 +348,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
     end
   
     f(ffk,xn)
-    results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -426,7 +426,7 @@ function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
   
     end
   
-    results = SolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -484,7 +484,7 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
     end
   
     f(ffk,xn)
-    results = SolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -599,7 +599,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
 
     end
   
-    results = SolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -701,7 +701,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -821,7 +821,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
 
     end
   
-    results = SolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -931,7 +931,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -1044,7 +1044,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
 
     end
   
-    results = SolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -1146,7 +1146,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
    
@@ -1267,7 +1267,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
 
     end
   
-    results = SolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -1372,7 +1372,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -1498,7 +1498,7 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
 
     end
   
-    results = SolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -1611,7 +1611,7 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -1730,7 +1730,7 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
 
     end
   
-    results = SolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -1835,7 +1835,7 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
     end
   
     f(ffn,xn)
-    results = SolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:lm_ar,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2029,7 +2029,7 @@ function constrained_trust_region_outplace(f::Function,x::Array{T,1},lb::Array{T
   
     end
   
-    results = SolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2203,7 +2203,7 @@ function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,
     end
   
     f(ffn,xn)
-    results = SolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2399,7 +2399,7 @@ function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1}
   
     end
   
-    results = SolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2578,7 +2578,7 @@ function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},
     end
   
     f(ffn,xn)
-    results = SolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2770,7 +2770,7 @@ function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::
   
     end
   
-    results = SolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -2944,7 +2944,7 @@ function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::A
     end
   
     f(ffn,xn)
-    results = SolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
   
@@ -3272,7 +3272,7 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3379,7 +3379,7 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3510,7 +3510,7 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3625,7 +3625,7 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3749,7 +3749,7 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
 
     end
   
-    results = SolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3856,7 +3856,7 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
     end
   
     f(ffn,xn)
-    results = SolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:dogleg,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -3980,7 +3980,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
 
     end
   
-    results = SolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4083,7 +4083,7 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
     end
   
     f(ffn,xn)
-    results = SolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4211,7 +4211,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
 
     end
   
-    results = SolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4322,7 +4322,7 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
     end
   
     f(ffn,xn)
-    results = SolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4443,7 +4443,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
 
     end
   
-    results = SolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4546,7 +4546,7 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
     end
   
     f(ffn,xn)
-    results = SolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:nk,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4656,7 +4656,7 @@ function constrained_jacobian_free_newton_krylov_outplace(f::Function,x::Array{T
 
     end
   
-    results = SolverResults(:jfnk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:jfnk,x,xn,f(xn),lenx,lenf,iter,solution_trace)
 
     return results
  
@@ -4754,7 +4754,7 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Array{T,
     end
   
     f(ffn,xn)
-    results = SolverResults(:jfnk,x,xn,ffn,lenx,lenf,iter,solution_trace)
+    results = BoxSolverResults(:jfnk,x,xn,ffn,lenx,lenf,iter,solution_trace)
 
     return results
  
