@@ -151,7 +151,7 @@ function test_mcpsolve_outplace()
     soln_newton_fb = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:nr)
     soln_lm_kyf_fb = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:lm_kyf)
     soln_lm_ar_fb  = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:lm_ar)
-    #soln_trust_fb  = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:tr)
+    soln_trust_fb  = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:tr)
     soln_dogleg_fb = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:dogleg)
     soln_nk_fb     = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:nk)
     soln_jfnk_fb   = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:fb,method=:jfnk)
@@ -159,9 +159,24 @@ function test_mcpsolve_outplace()
     soln_newton_fb_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:nr,sparsejac=:yes)
     soln_lm_kyf_fb_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:lm_kyf,sparsejac=:yes)
     soln_lm_ar_fb_sparse  = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:lm_ar,sparsejac=:yes)
-    #soln_trust_fb_sparse  = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:tr,sparsejac=:yes)
+    soln_trust_fb_sparse  = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:tr,sparsejac=:yes)
     soln_dogleg_fb_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:dogleg,sparsejac=:yes)
     soln_nk_fb_sparse     = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:fb,method=:nk,sparsejac=:yes)
+
+    soln_newton_chks = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:nr)
+    soln_lm_kyf_chks = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:lm_kyf)
+    soln_lm_ar_chks  = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:lm_ar)
+    soln_trust_chks  = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:tr)
+    soln_dogleg_chks = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:dogleg)
+    soln_nk_chks     = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:nk)
+    soln_jfnk_chks   = mcpsolve(test,x0,l,u,xtol=1e-8,ftol=1e-8,reformulation=:chks,method=:jfnk)
+
+    soln_newton_chks_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:nr,sparsejac=:yes)
+    soln_lm_kyf_chks_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:lm_kyf,sparsejac=:yes)
+    soln_lm_ar_chks_sparse  = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:lm_ar,sparsejac=:yes)
+    soln_trust_chks_sparse  = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:tr,sparsejac=:yes)
+    soln_dogleg_chks_sparse = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:dogleg,sparsejac=:yes)
+    soln_nk_chks_sparse     = mcpsolve(test,x0,l,u,ftol=1e-8,xtol=1e-8,reformulation=:chks,method=:nk,sparsejac=:yes)
 
     test_one   = maximum(abs,soln_lm_kyf_mid.zero - soln_newton_mid.zero) < 1e-7
     test_two   = maximum(abs,soln_lm_ar_mid.zero  - soln_newton_mid.zero) < 1e-7
@@ -179,7 +194,7 @@ function test_mcpsolve_outplace()
 
     test_thirteen  = maximum(abs,soln_lm_kyf_fb.zero - soln_lm_ar_fb.zero) < 1e-7
     test_fourteen  = maximum(abs,soln_lm_ar_fb.zero  - soln_lm_ar_fb.zero) < 1e-7
-    #test_fifteen   = maximum(abs,soln_trust_fb.zero  - soln_lm_ar_fb.zero) < 1e-7
+    test_fifteen   = maximum(abs,soln_trust_fb.zero  - soln_lm_ar_fb.zero) < 1e-7
     test_sixteen   = maximum(abs,soln_dogleg_fb.zero - soln_lm_ar_fb.zero) < 1e-7
     test_seventeen = maximum(abs,soln_nk_fb.zero     - soln_lm_ar_fb.zero) < 1e-7
     test_eighteen  = maximum(abs,soln_jfnk_fb.zero   - soln_lm_ar_fb.zero) < 1e-7
@@ -187,13 +202,29 @@ function test_mcpsolve_outplace()
     test_nineteen     = maximum(abs,soln_newton_fb_sparse.zero - soln_lm_ar_fb.zero) < 1e-7
     test_twenty       = maximum(abs,soln_lm_kyf_fb_sparse.zero - soln_lm_ar_fb.zero) < 1e-7
     test_twenty_one   = maximum(abs,soln_lm_ar_fb_sparse.zero  - soln_lm_ar_fb.zero) < 1e-7
-    #test_twenty_two   = maximum(abs,soln_trust_fb_sparse.zero  - soln_lm_ar_fb.zero) < 1e-7
+    test_twenty_two   = maximum(abs,soln_trust_fb_sparse.zero  - soln_lm_ar_fb.zero) < 1e-7
     test_twenty_three = maximum(abs,soln_dogleg_fb_sparse.zero - soln_lm_ar_fb.zero) < 1e-7
     test_twenty_four  = maximum(abs,soln_nk_fb_sparse.zero     - soln_lm_ar_fb.zero) < 1e-7
 
+    test_twenty_five  = maximum(abs,soln_lm_kyf_chks.zero - soln_lm_ar_chks.zero) < 1e-7
+    test_twenty_six   = maximum(abs,soln_lm_ar_chks.zero  - soln_lm_ar_chks.zero) < 1e-7
+    test_twenty_seven = maximum(abs,soln_trust_chks.zero  - soln_lm_ar_chks.zero) < 1e-7
+    test_twenty_eight = maximum(abs,soln_dogleg_chks.zero - soln_lm_ar_chks.zero) < 1e-7
+    test_twenty_nine  = maximum(abs,soln_nk_chks.zero     - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty       = maximum(abs,soln_jfnk_chks.zero   - soln_lm_ar_chks.zero) < 1e-7
+
+    test_thirty_one   = maximum(abs,soln_newton_chks_sparse.zero - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty_two   = maximum(abs,soln_lm_kyf_chks_sparse.zero - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty_three = maximum(abs,soln_lm_ar_chks_sparse.zero  - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty_four  = maximum(abs,soln_trust_chks_sparse.zero  - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty_five  = maximum(abs,soln_dogleg_chks_sparse.zero - soln_lm_ar_chks.zero) < 1e-7
+    test_thirty_six   = maximum(abs,soln_nk_chks_sparse.zero     - soln_lm_ar_chks.zero) < 1e-7
+
     return test_one, test_two, test_three, test_four, test_five, test_six, test_seven, test_eight, test_nine, test_ten, test_eleven,
-           test_twelve, test_thirteen, test_fourteen, #=test_fifteen,=# test_sixteen, test_seventeen, test_eighteen, test_nineteen,
-           test_twenty, test_twenty_one, #=test_twenty_two,=# test_twenty_three, test_twenty_four
+           test_twelve, test_thirteen, test_fourteen, test_fifteen, test_sixteen, test_seventeen, test_eighteen, test_nineteen,
+           test_twenty, test_twenty_one, test_twenty_two, test_twenty_three, test_twenty_four, test_twenty_five, test_twenty_six,
+           test_twenty_seven, test_twenty_eight, test_twenty_nine, test_thirty, test_thirty_one, test_thirty_two, test_thirty_three,
+           test_thirty_four, test_thirty_five, test_thirty_six
 
 end
 

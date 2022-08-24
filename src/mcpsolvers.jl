@@ -8,7 +8,7 @@ end
 
 function fischer_burmeister(x,l,u,y)
 
-    fischer_burmeister(a,b) = sqrt(a^2+b^2) - a - b
+    fischer_burmeister(a,b) = sqrt(a^2+b^2 + eps()) - a - b # eps() added to avoid non-differentiability at (0,0)
 
     if l > -Inf && u == Inf
         return fischer_burmeister(x-l,y)
@@ -16,6 +16,22 @@ function fischer_burmeister(x,l,u,y)
         return -fischer_burmeister(u-x,-y)
     elseif l > -Inf && u < Inf
         return fischer_burmeister(x-l,fischer_burmeister(u-x,-y))
+    else
+        return x
+    end
+
+end
+
+function chks(x,l,u,y)
+
+    chks(a,b) = sqrt((a-b)^2 + eps()) - a - b # eps() added to avoid non-differentiability at (0,0)
+
+    if l > -Inf && u == Inf
+        return chks(x-l,y)
+    elseif l == -Inf && u < Inf
+        return -chks(u-x,-y)
+    elseif l > -Inf && u < Inf
+        return chks(x-l,chks(u-x,-y))
     else
         return x
     end
@@ -37,7 +53,7 @@ function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Arr
 
     h(x) = fischer_burmeister.(x,lb,ub,f(x))
 
-    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
 
     results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
@@ -45,12 +61,26 @@ function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Arr
 
 end
 
-function mcpsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:fb,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
+function MCP_chks(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
+
+    h(x) = chks.(x,lb,ub,f(x))
+
+    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
+
+    results = MCPSolverResults(soln.solution_method,:chks,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    
+    return results
+
+end
+
+function mcpsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:mid,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if reformulation == :mid
         return MCP_mid(f,x,lb,ub,xtol,ftol,iterations,method,sparsejac)
     elseif reformulation == :fb
         return MCP_fischer_burmeister(f,x,lb,ub,xtol,ftol,iterations,method,sparsejac)
+    elseif reformulation == :chks
+        return MCP_chks(f,x,lb,ub,xtol,ftol,iterations,method,sparsejac)
     else
         error("Your chosen reformulation is not supported")
     end
