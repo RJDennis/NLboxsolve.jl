@@ -218,7 +218,7 @@ The appropriate assignment of variables to functions is dictated by the problem 
 
 - The "mid" reformulation recasts the problem as: $h_i(x) = x_i - mid(l_i,u_i,x_i-f_i(x))$ and seeks to solve $H(x) = 0$, $l \le x \le u$.  This reformulation is selected with ```reformulation = :mid``` (this reformulation is the default).
 - The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = \sqrt{x_i^2 + f_i(x)^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :fb```.
-- The Chen-Harker-Kanzow-Smale reformulation makes use of the transform: $h_i(x) = \sqrt{(x_i^2 - f_i(x))^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :chks```.
+- The Chen-Harker-Kanzow-Smale reformulation makes use of the transform: $h_i(x) = \sqrt{(x_i - f_i(x))^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :chks```.
 
 Formulating a problem
 ---------------------
