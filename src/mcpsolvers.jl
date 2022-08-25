@@ -38,38 +38,132 @@ function chks(x,l,u,y)
 
 end
 
+function closure_mid(g,x,lb,ub,f::Function)
+
+    function h!(g,x)
+    
+        ff = similar(x)
+        f(ff,x)
+        g .= x - mid.(lb,ub,x-ff)
+    
+    end
+    
+    return h!
+
+end
+
+function closure_fischer_burmeister(g,x,lb,ub,f::Function)
+
+    function h!(g,x)
+    
+        ff = similar(x)
+        f(ff,x)
+        g .= fischer_burmeister.(x,lb,ub,ff)
+    
+    end
+    
+    return h!
+
+end
+
+function closure_chks(g,x,lb,ub,f::Function)
+
+    function h!(g,x)
+    
+        ff = similar(x)
+        f(ff,x)
+        g .= chks.(x,lb,ub,ff)
+    
+    end
+    
+    return h!
+
+end
+
 function MCP_mid(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
-    h(x) = x - mid.(lb,ub,x-f(x))
-    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
-    results = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    if f_inplace == false
+
+        h(x) = x - mid.(lb,ub,x-f(x))
+        soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+
+        results = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
-    return results
+        return results
+
+    else
+
+        g = similar(x)
+        h! = closure_mid(g,x,lb,ub,f)
+        soln = nlboxsolve(h!,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+
+        ff = similar(x)
+        f(ff,soln.zero)
+        results = MCPSolverResults(soln.solution_method,:mid,x,soln.zero,ff,soln.xdist,soln.fdist,soln.iters,soln.trace)
+    
+        return results
+
+    end
 
 end
 
 function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
-    h(x) = fischer_burmeister.(x,lb,ub,f(x))
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
-    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
+    if f_inplace == false
 
-    results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+        h(x) = fischer_burmeister.(x,lb,ub,f(x))
+        soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
+
+        results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
-    return results
+        return results
+
+    else
+
+        g = similar(x)
+        h! = closure_fischer_burmeister(g,x,lb,ub,f)
+        soln = nlboxsolve(h!,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+
+        ff = similar(x)
+        f(ff,soln.zero)
+        results = MCPSolverResults(soln.solution_method,:fb,x,soln.zero,ff,soln.xdist,soln.fdist,soln.iters,soln.trace)
+    
+        return results
+
+    end
 
 end
 
 function MCP_chks(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
-    h(x) = chks.(x,lb,ub,f(x))
+    f_inplace = !applicable(f,x) # Check if function is inplace
 
-    soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
-
-    results = MCPSolverResults(soln.solution_method,:chks,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
+    if f_inplace == false
+        
+        h(x) = chks.(x,lb,ub,f(x))
+        soln = nlboxsolve(h,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method=method,sparsejac=sparsejac)
+        
+        results = MCPSolverResults(soln.solution_method,:chks,x,soln.zero,f(soln.zero),soln.xdist,soln.fdist,soln.iters,soln.trace)
     
-    return results
+        return results
+
+    else
+
+        g = similar(x)
+        h! = closure_chks(g,x,lb,ub,f)
+        soln = nlboxsolve(h!,x,lb,ub,xtol=xtol,ftol=ftol,iterations=maxiters,method = method,sparsejac = sparsejac)
+
+        ff = similar(x)
+        f(ff,soln.zero)
+        results = MCPSolverResults(soln.solution_method,:chks,x,soln.zero,ff,soln.xdist,soln.fdist,soln.iters,soln.trace)
+    
+        return results
+
+    end
 
 end
 

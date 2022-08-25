@@ -229,7 +229,7 @@ As previously, the key elements to a problem are a vector-function containing th
 soln = mcpsolve(F,x,lb,ub)
 ```
 
-- Currently, the function, ```F(x)```, cannot be in-place.
+- The function, ```F(x)```, that is passed to mcpsolve() can be in-place.
 - The solvers that underpin ```mcpsolve()``` are those accessable through the ```nlboxsolve()``` function.
 
 The general function call allows up to seven keyword arguments, for example:
@@ -259,10 +259,20 @@ function simple(x::Array{T,1}) where {T<:Number}
 
 end
 
+function simple!(f::Array{T,1},x::Array{T,1}) where {T<:Number}
+
+    f[1] = x[1]^3 - 8
+    f[2] = x[2] - x[3] + x[2]^3 + 3
+    f[3] = x[2] + x[3] + 2*x[3]^3 - 3
+    f[4] = x[4] + 2*x[4]^3
+
+end
+
 x0 = [0.5,0.5,0.5,0.5]
 lb = [-1.0,-1.0,-1.0,-1.0]
 ub = [1.0,1.0,1.0,1.0]
-soln = mcpsolve(simple,x0,lb,ub,xtol=1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
+solna = mcpsolve(simple,x0,lb,ub,xtol=1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
+solnb = mcpsolve(simple!,x0,lb,ub,xtol=1e-8,ftol=1e-8,reformulation=:mid,method=:nr)
 ```
 
 Related packages
