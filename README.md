@@ -229,7 +229,7 @@ As previously, the key elements to a problem are a vector-function containing th
 soln = mcpsolve(F,x,lb,ub)
 ```
 
-- The function, ```F(x)```, that is passed to mcpsolve() can be in-place.
+- The vector-function that is passed to mcpsolve() can be in-place.
 - The solvers that underpin ```mcpsolve()``` are those accessable through the ```nlboxsolve()``` function.
 
 The general function call allows up to seven keyword arguments, for example:
