@@ -238,7 +238,7 @@ The general function call allows up to seven keyword arguments, for example:
 soln = mcpsolve(F,x,lb,ub,xtol=1e-10,ftol=1e-10,iterations=200,reformulation=:mid,method=:nr,sparsejac=:yes,krylovdim=20)
 ```
 
-where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```reformulation``` selects the transform used to reformulate the problem (default = :fb), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the Newton-Krylov methods (and ignored for the other methods).
+where ```xtol``` is the convergence tolerance applied to the solution point, ```x```, (default = 1e-8), ```ftol``` is the convergence tolerance applied to ```F(x)``` (default = 1e-8), ```iterations``` is the maximum number of iterations (default = 100), ```reformulation``` selects the transform used to reformulate the problem (default = :mid), ```method``` specifies the algorithm used (default = :lm_ar), ```sparsejac``` selects whether a sparse Jacobian should be used (default = :no), and ```krylovdim``` (default = 30) is specific to the Newton-Krylov methods (and ignored for the other methods).
 
 Example
 -------
