@@ -212,7 +212,7 @@ For a vector-function $F(x) = [f_i(x)]$ with $l_i \le x_i \le u_i$, $i = 1...n$,
 
 - i) $f_i(x) = 0$ and $l_i < x_i < u_i$, or
 - ii) $f_i(x) > 0$ and $x_i = l_i$, or 
-- iii) and $f_i(x) < 0$ and $x_i = u_i$.
+- iii) $f_i(x) < 0$ and $x_i = u_i$.
 
 The appropriate assignment of variables to functions is dictated by the problem being solved.  Mixed complementarity problems can be reformulated in different ways, some of which allow them to be solved using the tools developed for solving box-constrained systems of nonlinear equations.  This package allows three reformulations:
 
