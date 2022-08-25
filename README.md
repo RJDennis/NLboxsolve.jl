@@ -208,7 +208,7 @@ soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 Solving Mixed Complementarity Problems
 ======================================
 
-For a vector-function $F(x) = [f_i(x)]$ with $l_i \le x_i \le u_i, i = 1...n$, a mixed complementarity problem is one that can be expressed as: find $x$ in $l \le x \le u$ such that either: i) $f_i(x) = 0 and l_i < x_i < u$, or; ii) $f_i(x) > 0 and x_i = l_i$, or iii) and $f_i(x) < 0 and x_i = u_i$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows three reformulations:
+For a vector-function $F(x) = [f_i(x)]$ with $l_i \le x_i \le u_i$, $i = 1...n$, a mixed complementarity problem is one that can be expressed as: find $x$ in $l \le x \le u$ such that for all $i=1,...,n$ either: i) $f_i(x) = 0$ and $l_i < x_i < u$, or; ii) $f_i(x) > 0$ and $x_i = l_i$, or iii) and $f_i(x) < 0$ and $x_i = u_i$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows three reformulations:
 
 - The "mid" reformulation recasts the problem as: $h_i(x) = x_i - mid(l_i,u_i,x_i-f_i(x))$ and seeks to solve $h(x) = 0$, $l \le x \le u$.  This reformulation is selected with ```reformulation = :mid``` (this reformulation is the default).
 - The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = \sqrt{x_i^2 + f_i(x)^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :fb```.
