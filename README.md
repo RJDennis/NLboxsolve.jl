@@ -208,9 +208,15 @@ soln_h = nlboxsolve(f!,j!,x0,lb,ub,xtol=1e-15,ftol=1e-15,method=:nr)
 Solving Mixed Complementarity Problems
 ======================================
 
-For a vector-function $F(x) = [f_i(x)]$ with $l_i \le x_i \le u_i$, $i = 1...n$, a mixed complementarity problem is one that can be expressed as: find $x$ in $l \le x \le u$ such that for all $i=1,...,n$ either: i) $f_i(x) = 0$ and $l_i < x_i < u$, or; ii) $f_i(x) > 0$ and $x_i = l_i$, or iii) and $f_i(x) < 0$ and $x_i = u_i$.  These problems can be reformulated in different ways allowing them to be solved using the tools used to solve box-constrained systems of nonlinear equations.  This package allows three reformulations:
+For a vector-function $F(x) = [f_i(x)]$ with $l_i \le x_i \le u_i$, $i = 1...n$, a mixed complementarity problem is one that can be expressed as: find $x$ in the box govorned by $[l,u]$ such that for all $i = 1,...,n$ either:
 
-- The "mid" reformulation recasts the problem as: $h_i(x) = x_i - mid(l_i,u_i,x_i-f_i(x))$ and seeks to solve $h(x) = 0$, $l \le x \le u$.  This reformulation is selected with ```reformulation = :mid``` (this reformulation is the default).
+- i) $f_i(x) = 0$ and $l_i < x_i < u_i$, or
+- ii) $f_i(x) > 0$ and $x_i = l_i$, or 
+- iii) and $f_i(x) < 0$ and $x_i = u_i$.
+
+The appropriate assignment of variables to functions is dictated by the problem being solved.  Mixed complementarity problems can be reformulated in different ways, some of which allow them to be solved using the tools developed for solving box-constrained systems of nonlinear equations.  This package allows three reformulations:
+
+- The "mid" reformulation recasts the problem as: $h_i(x) = x_i - mid(l_i,u_i,x_i-f_i(x))$ and seeks to solve $H(x) = 0$, $l \le x \le u$.  This reformulation is selected with ```reformulation = :mid``` (this reformulation is the default).
 - The Fischer-Burmeister reformulation makes use of the transform: $h_i(x) = \sqrt{x_i^2 + f_i(x)^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :fb```.
 - The Chen-Harker-Kanzow-Smale reformulation makes use of the transform: $h_i(x) = \sqrt{(x_i^2 - f_i(x))^2} - x_i - f_i(x)$.  This reformulation is selected with ```reformulation = :chks```.
 
