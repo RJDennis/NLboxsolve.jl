@@ -557,6 +557,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
@@ -566,6 +567,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
                     α = β*α
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true
@@ -650,6 +652,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         f(ffn,xn)
         if norm(ffn) > γ*norm(ffk)
@@ -665,6 +668,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
                     end
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true
@@ -779,6 +783,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
@@ -788,6 +793,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
                     α = β*α
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true
@@ -880,6 +886,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         f(ffn,xn)
         if norm(ffn) > γ*norm(ffk)
@@ -895,6 +902,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
                     end
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true
@@ -1002,6 +1010,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         if norm(f(xn)) > γ*norm(f(xk))
             g .= jk'f(xk)
@@ -1011,6 +1020,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
                     α = β*α
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true
@@ -1095,6 +1105,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
         box_projection!(xn,lb,ub)
+        dk .= xn - xk
 
         f(ffn,xn)
         if norm(ffn) > γ*norm(ffk)
@@ -1110,6 +1121,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
                     end
                 end
                 xn .= xk + α*dk
+                box_projection!(xn,lb,ub)
             else
                 α = 1.0
                 while true

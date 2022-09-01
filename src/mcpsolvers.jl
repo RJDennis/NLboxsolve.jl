@@ -17,7 +17,7 @@ function fischer_burmeister(x,l,u,y)
     elseif l > -Inf && u < Inf
         return fischer_burmeister(x-l,fischer_burmeister(u-x,-y))
     else
-        return x
+        return -y
     end
 
 end
@@ -33,7 +33,7 @@ function chks(x,l,u,y)
     elseif l > -Inf && u < Inf
         return chks(x-l,chks(u-x,-y))
     else
-        return x
+        return -y
     end
 
 end
