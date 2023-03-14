@@ -112,7 +112,7 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -169,7 +169,7 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
         end
         if rank(jk) == n # Compute a Newton step
             xn .= xk - jk\ffk
@@ -254,7 +254,7 @@ function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},lb::A
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -317,7 +317,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
         end
 
         f(ffk,xk)
@@ -398,7 +398,7 @@ function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:nr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -455,7 +455,7 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:nr,x,xn,ffk,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
         end
         if rank(jk) == n # Compute a Newton step
             xn .= xk - jk\ffk
@@ -552,7 +552,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
@@ -647,7 +647,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
@@ -777,7 +777,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
@@ -879,7 +879,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
 
         f(ffk,xk)
@@ -1005,7 +1005,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
@@ -1100,7 +1100,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
@@ -2154,7 +2154,7 @@ function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
 
         # Compute the principal direction
@@ -2356,7 +2356,7 @@ function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1}
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:tr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         # Compute the principal direction
@@ -2528,7 +2528,7 @@ function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
 
         # Compute the principal direction
@@ -2727,7 +2727,7 @@ function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,f(xn),lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:tr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         # Compute the principal direction
@@ -2895,7 +2895,7 @@ function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::A
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,lenx,lenf,iter,solution_trace)
+            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
         end
 
         # Compute the principal direction
