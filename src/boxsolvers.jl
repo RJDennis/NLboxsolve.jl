@@ -3296,7 +3296,7 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
@@ -3400,7 +3400,7 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
@@ -3533,7 +3533,7 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
@@ -3644,7 +3644,7 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
 
         f(ffk,xk)
@@ -3773,7 +3773,7 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
@@ -3877,7 +3877,7 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            error("The jacobian has non-finite elements")
+            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
         end
         df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
@@ -3992,7 +3992,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
         if flag_ng == false
             jk .= ForwardDiff.jacobian(f,xk)
             if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end    
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
@@ -4091,7 +4091,7 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
         if flag_ng == false
             jk .= ForwardDiff.jacobian(f,ffk,xk)
             if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end    
             dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
@@ -4222,7 +4222,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
                 j(jk,xk)
             end
             if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end
     
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
@@ -4328,7 +4328,7 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
                 j(jk,xk)
             end
             if !all(isfinite,jk)
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end
     
             f(ffk,xk)
@@ -4455,7 +4455,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
         if flag_ng == false
             jk .= sparse(ForwardDiff.jacobian(f,xk))
             if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end    
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
@@ -4554,7 +4554,7 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
         if flag_ng == false
             jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
             if !all(isfinite,nonzeros(jk))
-                error("The jacobian has non-finite elements")
+                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
             end    
             dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
