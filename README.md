@@ -1,8 +1,5 @@
 # NLboxsolve.jl
 
-[![Build Status](https://github.com/RJDENNIS/NLboxsolve.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/RJDENNIS/NLboxsolve.jl/actions/workflows/CI.yml?query=branch%3Amaster)
-[![Coverage](https://codecov.io/gh/RJDENNIS/NLboxsolve.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/RJDENNIS/NLboxsolve.jl)
-
 Introduction
 ============
 
