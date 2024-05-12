@@ -1,7 +1,5 @@
 # NLboxsolve.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://RJDENNIS.github.io/NLboxsolve.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://RJDENNIS.github.io/NLboxsolve.jl/dev/)
 [![Build Status](https://github.com/RJDENNIS/NLboxsolve.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/RJDENNIS/NLboxsolve.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 [![Coverage](https://codecov.io/gh/RJDENNIS/NLboxsolve.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/RJDENNIS/NLboxsolve.jl)
 
