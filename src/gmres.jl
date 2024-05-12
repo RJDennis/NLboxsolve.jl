@@ -47,13 +47,13 @@ function gmres(a::AbstractArray{T,2},b::AbstractArray{T,1},x::AbstractArray{T,1}
     x = copy(x)
     n = length(x)
 
-    m = min(m,n)
+    m = min(m,n) 
     
     step = Array{T,1}(undef,n)
 
     g = Array{T,2}(undef,2,2)
 
-    loop_max = ceil(Int,n/m)
+    loop_max = ceil(Int,n/m) # Maximum number of restarts
     loop_count = 1
     while loop_count <= loop_max 
 
@@ -202,7 +202,7 @@ function gmres(f::Function,x::Array{T,1},forcing_term::T,m::S) where {T <: Abstr
 
     g = Array{T,2}(undef,2,2)
 
-    loop_max = ceil(Int,n/m)
+    loop_max = ceil(Int,n/m) # Maximum number of restarts
     loop_count = 1
     while loop_count <= loop_max 
 
@@ -250,7 +250,7 @@ function gmres_sparse(f::Function,x::Array{T,1},forcing_term::T,m::S) where {T <
 
     g = Array{T,2}(undef,2,2)
 
-    loop_max = ceil(Int,n/m)
+    loop_max = ceil(Int,n/m) # Maximum number of restarts
     loop_count = 1
     while loop_count <= loop_max 
 

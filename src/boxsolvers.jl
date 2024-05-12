@@ -1,4 +1,3 @@
-function box_projection(x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     y = copy(x)
 
@@ -112,7 +111,7 @@ function constrained_newton_outplace(f::Function,x::Array{T,1},lb::Array{T,1},ub
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -169,7 +168,7 @@ function constrained_newton_inplace(f::Function,x::Array{T,1},lb::Array{T,1},ub:
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         if rank(jk) == n # Compute a Newton step
             xn .= xk - jk\ffk
@@ -254,7 +253,7 @@ function constrained_newton_outplace(f::Function,j::Function,x::Array{T,1},lb::A
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -317,7 +316,7 @@ function constrained_newton_inplace(f::Function,j::Function,x::Array{T,1},lb::Ar
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         f(ffk,xk)
@@ -398,7 +397,7 @@ function constrained_newton_sparse_outplace(f::Function,x::Array{T,1},lb::Array{
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:nr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         if rank(jk) == n # Compute a Newton step
@@ -455,7 +454,7 @@ function constrained_newton_sparse_inplace(f::Function,x::Array{T,1},lb::Array{T
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:nr,x,xn,ffk,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         if rank(jk) == n # Compute a Newton step
             xn .= xk - jk\ffk
@@ -552,7 +551,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,x::Array{T,1},
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
@@ -647,7 +646,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,x::Array{T,1},l
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
@@ -777,7 +776,7 @@ function constrained_levenberg_marquardt_kyf_outplace(f::Function,j::Function,x:
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
@@ -879,7 +878,7 @@ function constrained_levenberg_marquardt_kyf_inplace(f::Function,j::Function,x::
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         f(ffk,xk)
@@ -1005,7 +1004,7 @@ function constrained_levenberg_marquardt_kyf_sparse_outplace(f::Function,x::Arra
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:lm_kyf,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         dk .= -(jk'jk + μk*I)\(jk'f(xk))
         xn .= xk + dk
@@ -1100,7 +1099,7 @@ function constrained_levenberg_marquardt_kyf_sparse_inplace(f::Function,x::Array
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            return BoxSolverResults(:lm_kyf,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         dk .= -(jk'jk + μk*I)\(jk'ffk)
         xn .= xk + dk
@@ -1200,8 +1199,6 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
 
     n = length(x)
     xk = copy(x)
-    xk1 = similar(x)
-    xk2 = similar(x)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1227,27 +1224,20 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,x::Array{T,1},l
     while true
 
         jk .= ForwardDiff.jacobian(f,xk)
-        
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
         λk = μ*norm(f(xk))^2
 
         d1k = -(jk'jk + λk*I)\(jk'f(xk))
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
-        d2k = -(jk'jk + λk*I)\(jk'f(xk1))
-        xk2 .= xk1 + -(jk'jk + λk*I) \ (jk'f(xk1))
-        box_projection!(xk2,lb,ub)
-
-        d3k = -(jk'jk + λk*I)\(jk'f(xk2))
-        z .= xk2 + -(jk'jk + λk*I) \ (jk'f(xk2))
-        box_projection!(z,lb,ub)
-        
         dk = d1k+d2k+d3k
-        s .= z-xk
 
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,f(xn),Inf,Inf,iter,solution_trace)
-        end
+        z .= xk+dk
+        box_projection!(z,lb,ub)
+        s .= z-xk
 
         if norm(f(z)) <= ρ*norm(f(xk))
             α = 1.0
@@ -1304,8 +1294,6 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
 
     n = length(x)
     xk = copy(x)
-    xk1 = similar(xk)
-    xk2 = similar(xk)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1335,29 +1323,22 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,x::Array{T,1},lb
     while true
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
         λk = μ*norm(ffk)^2
 
         d1k = -(jk'jk + λk*I)\(jk'ffk)
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
-        f(ffn,xk1)
-
+        f(ffn,xk+d1k)
         d2k = -(jk'jk + λk*I)\(jk'ffn)
-        xk2 .= xk1 + d2k
-        box_projection!(xk2,lb,ub)
-        f(ffn,xk2)
-
+        f(ffn,xk+d1k+d2k)
         d3k = -(jk'jk + λk*I)\(jk'ffn)
-        z .= xk2+d3k
-        box_projection!(z,lb,ub)
 
         dk = d1k+d2k+d3k
 
+        z .= xk+dk
+        box_projection!(z,lb,ub)
         s .= z-xk
-
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,ffn,Inf,Inf,iter,solution_trace)
-        end
 
         f(ffn,z)
         if norm(ffn) <= ρ*norm(ffk)
@@ -1444,8 +1425,6 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
 
     n = length(x)
     xk = copy(x)
-    xk1 = similar(xk)
-    xk2 = similar(xk)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1475,27 +1454,21 @@ function constrained_levenberg_marquardt_ar_outplace(f::Function,j::Function,x::
         else
             j(jk,xk)
         end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
 
         λk = μ*norm(f(xk))^2
 
         d1k = -(jk'jk + λk*I)\(jk'f(xk))
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
-        d2k = -(jk'jk + λk*I)\(jk'f(xk1))
-        xk2 .= xk1 + -(jk'jk + λk*I) \ (jk'f(xk1))
-        box_projection!(xk2,lb,ub)
-
-        d3k = -(jk'jk + λk*I)\(jk'f(xk2))
-        z .= xk2 + -(jk'jk + λk*I) \ (jk'f(xk2))
-        box_projection!(z,lb,ub)
-        
         dk = d1k+d2k+d3k
-        s .= z-xk
 
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,f(xn),Inf,Inf,iter,solution_trace)
-        end
+        z .= xk+dk
+        box_projection!(z,lb,ub)
+        s .= z-xk
 
         if norm(f(z)) <= ρ*norm(f(xk))
             α = 1.0
@@ -1554,8 +1527,6 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
 
     n = length(x)
     xk = copy(x)
-    xk1 = simlar(xk)
-    xk2 = similar(xk)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1589,30 +1560,24 @@ function constrained_levenberg_marquardt_ar_inplace(f::Function,j::Function,x::A
         else
             j(jk,xk)
         end
-        
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        f(ffk,xk)
         λk = μ*norm(ffk)^2
 
         d1k = -(jk'jk + λk*I)\(jk'ffk)
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
-        f(ffn,xk1)
-
+        f(ffn,xk+d1k)
         d2k = -(jk'jk + λk*I)\(jk'ffn)
-        xk2 .= xk1 + d2k
-        box_projection!(xk2,lb,ub)
-        f(ffn,xk2)
-
+        f(ffn,xk+d1k+d2k)
         d3k = -(jk'jk + λk*I)\(jk'ffn)
-        z .= xk2+d3k
-        box_projection!(z,lb,ub)
 
         dk = d1k+d2k+d3k
 
+        z .= xk+dk
+        box_projection!(z,lb,ub)
         s .= z-xk
-
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,ffn,Inf,Inf,iter,solution_trace)
-        end
 
         f(ffn,z)
         if norm(ffn) <= ρ*norm(ffk)
@@ -1697,8 +1662,6 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
 
     n = length(x)
     xk = copy(x)
-    xk1 = similar(xk)
-    xk2 = similar(xk)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1724,28 +1687,20 @@ function constrained_levenberg_marquardt_ar_sparse_outplace(f::Function,x::Array
     while true
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
-        
-
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
         λk = μ*norm(f(xk))^2
 
         d1k = -(jk'jk + λk*I)\(jk'f(xk))
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
+        d2k = -(jk'jk + λk*I)\(jk'f(xk+d1k))
+        d3k = -(jk'jk + λk*I)\(jk'f(xk+d1k+d2k))
 
-        d2k = -(jk'jk + λk*I)\(jk'f(xk1))
-        xk2 .= xk1 + -(jk'jk + λk*I) \ (jk'f(xk1))
-        box_projection!(xk2,lb,ub)
-
-        d3k = -(jk'jk + λk*I)\(jk'f(xk2))
-        z .= xk2 + -(jk'jk + λk*I) \ (jk'f(xk2))
-        box_projection!(z,lb,ub)
-        
         dk = d1k+d2k+d3k
-        s .= z-xk
 
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,f(xn),Inf,Inf,iter,solution_trace)
-        end
+        z .= xk+dk
+        box_projection!(z,lb,ub)
+        s .= z-xk
 
         if norm(f(z)) <= ρ*norm(f(xk))
             α = 1.0
@@ -1802,8 +1757,6 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
 
     n = length(x)
     xk = copy(x)
-    xk1 = similar(x)
-    xk2 = similar(x)
     xn = similar(x)
     z  = similar(x)
     s  = similar(x)
@@ -1833,30 +1786,22 @@ function constrained_levenberg_marquardt_ar_sparse_inplace(f::Function,x::Array{
     while true
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
-        
+        if !all(isfinite,nonzeros(jk))
+            error("The jacobian has non-finite elements")
+        end
         λk = μ*norm(ffk)^2
 
         d1k = -(jk'jk + λk*I)\(jk'ffk)
-        xk1 .= xk + d1k
-        box_projection!(xk1,lb,ub)
-        f(ffn,xk1)
-
+        f(ffn,xk+d1k)
         d2k = -(jk'jk + λk*I)\(jk'ffn)
-        xk2 .= xk1 + d2k
-        box_projection!(xk2,lb,ub)
-        f(ffn,xk2)
-
+        f(ffn,xk+d1k+d2k)
         d3k = -(jk'jk + λk*I)\(jk'ffn)
-        z .= xk2+d3k
-        box_projection!(z,lb,ub)
 
         dk = d1k+d2k+d3k
 
+        z .= xk+dk
+        box_projection!(z,lb,ub)
         s .= z-xk
-
-        if !all(isfinite,s)
-            return BoxSolverResults(:lm_ar,x,xn,ffn,Inf,Inf,iter,solution_trace)
-        end
 
         f(ffn,z)
         if norm(ffn) <= ρ*norm(ffk)
@@ -1986,7 +1931,7 @@ function constrained_trust_region_outplace(f::Function,x::Array{T,1},lb::Array{T
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -2154,7 +2099,7 @@ function constrained_trust_region_inplace(f::Function,x::Array{T,1},lb::Array{T,
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -2356,7 +2301,7 @@ function constrained_trust_region_outplace(f::Function,j::Function,x::Array{T,1}
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -2528,7 +2473,7 @@ function constrained_trust_region_inplace(f::Function,j::Function,x::Array{T,1},
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -2727,7 +2672,7 @@ function constrained_trust_region_sparse_outplace(f::Function,x::Array{T,1},lb::
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -2895,7 +2840,7 @@ function constrained_trust_region_sparse_inplace(f::Function,x::Array{T,1},lb::A
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,jk)
-            return BoxSolverResults(:tr,x,xn,ffn,Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         # Compute the principal direction
@@ -3296,7 +3241,7 @@ function constrained_dogleg_solver_outplace(f::Function,x::Array{T,1},lb::Array{
 
         jk .= ForwardDiff.jacobian(f,xk)
         if !all(isfinite,jk)
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
@@ -3400,7 +3345,7 @@ function constrained_dogleg_solver_inplace(f::Function,x::Array{T,1},lb::Array{T
 
         jk .= ForwardDiff.jacobian(f,ffk,xk)
         if !all(isfinite,jk)
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
@@ -3533,7 +3478,7 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::Array{T,1
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
@@ -3644,7 +3589,7 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::Array{T,1}
             j(jk,xk)
         end
         if !all(isfinite,jk)
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
 
         f(ffk,xk)
@@ -3773,7 +3718,7 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::Array{T,1},lb:
 
         jk .= sparse(ForwardDiff.jacobian(f,xk))
         if !all(isfinite,nonzeros(jk))
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         df .= coleman_li_outplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
@@ -3877,7 +3822,7 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::Array{T,1},lb::
 
         jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
         if !all(isfinite,nonzeros(jk))
-            BoxSolverResults(:dogleg,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+            error("The jacobian has non-finite elements")
         end
         df .= coleman_li_inplace(f,jk,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
@@ -3992,7 +3937,7 @@ function constrained_newton_krylov_outplace(f::Function,x::Array{T,1},lb::Array{
         if flag_ng == false
             jk .= ForwardDiff.jacobian(f,xk)
             if !all(isfinite,jk)
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end    
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
@@ -4091,7 +4036,7 @@ function constrained_newton_krylov_inplace(f::Function,x::Array{T,1},lb::Array{T
         if flag_ng == false
             jk .= ForwardDiff.jacobian(f,ffk,xk)
             if !all(isfinite,jk)
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end    
             dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
@@ -4222,7 +4167,7 @@ function constrained_newton_krylov_outplace(f::Function,j::Function,x::Array{T,1
                 j(jk,xk)
             end
             if !all(isfinite,jk)
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end
     
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
@@ -4328,7 +4273,7 @@ function constrained_newton_krylov_inplace(f::Function,j::Function,x::Array{T,1}
                 j(jk,xk)
             end
             if !all(isfinite,jk)
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end
     
             f(ffk,xk)
@@ -4455,7 +4400,7 @@ function constrained_newton_krylov_sparse_outplace(f::Function,x::Array{T,1},lb:
         if flag_ng == false
             jk .= sparse(ForwardDiff.jacobian(f,xk))
             if !all(isfinite,nonzeros(jk))
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end    
             dk, status = gmres(jk,-f(xk),xk,ηk,krylovdim) # Inexact restarted
 
@@ -4554,7 +4499,7 @@ function constrained_newton_krylov_sparse_inplace(f::Function,x::Array{T,1},lb::
         if flag_ng == false
             jk .= sparse(ForwardDiff.jacobian(f,ffk,xk))
             if !all(isfinite,nonzeros(jk))
-                BoxSolverResults(:nk,x,xn,f(xn),Inf,Inf,iter,solution_trace)
+                error("The jacobian has non-finite elements")
             end    
             dk, status = gmres(jk,-ffk,xk,ηk,krylovdim) # Inexact restarted
 
