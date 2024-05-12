@@ -1,3 +1,4 @@
+function box_projection(x::Array{T,1},lb::Array{T,1},ub::Array{T,1}) where {T <: AbstractFloat}
 
     y = copy(x)
 
