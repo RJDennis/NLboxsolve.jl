@@ -1,14 +1,14 @@
-function arnoldi(a::AbstractArray{T,2},b::AbstractArray{T,1},m::S = length(b)) where {T <: AbstractFloat, S <: Integer} # Exact
+function arnoldi(a::AbstractMatrix{T},b::AbstractVector{T},m::S = length(b)) where {T <: AbstractFloat, S <: Integer} # Exact
 
     n = length(b)
     if m > n
         error("'m' must be no larger than the length of 'b' ")
     end
 
-    q = zeros(n,m)
-    h = zeros(m+1,m)
+    q = zeros(T,n,m)
+    h = zeros(T,m+1,m)
 
-    β = norm(b)
+    β  = norm(b)
     qk = copy(b)
 
     @views for k = 1:m
@@ -29,17 +29,17 @@ function arnoldi(a::AbstractArray{T,2},b::AbstractArray{T,1},m::S = length(b)) w
 
 end
 
-function arnoldi(f::Function,x::Array{T,1},r::Array{T,1},m::S=length(x)) where {T <: AbstractFloat, S <: Integer} #Exact
+function arnoldi(f::Function,x::AbstractVector{T},r::AbstractVector{T},m::S=length(x)) where {T <: AbstractFloat, S <: Integer} #Exact
 
     n = length(x)
     if m > n
         error("'m' must be no larger than the length of 'b' ")
     end
 
-    q = zeros(n,m)
-    h = zeros(m+1,m)
+    q = zeros(T,n,m)
+    h = zeros(T,m+1,m)
 
-    β = norm(r)
+    β  = norm(r)
     qk = copy(r)
 
     @views for k = 1:m
@@ -60,17 +60,17 @@ function arnoldi(f::Function,x::Array{T,1},r::Array{T,1},m::S=length(x)) where {
 
 end
 
-function arnoldi(a::AbstractArray{T,2},b::AbstractArray{T,1},tol::T,m::S=length(b)) where {T <: AbstractFloat, S <: Integer} #Inexact
+function arnoldi(a::AbstractMatrix{T},b::AbstractVector{T},tol::T,m::S=length(b)) where {T <: AbstractFloat, S <: Integer} #Inexact
 
     n = length(b)
     if m > n
         error("'m' must be no larger than the length of 'b' ")
     end
 
-    q = zeros(n,m)
-    h = zeros(m+1,m)
+    q = zeros(T,n,m)
+    h = zeros(T,m+1,m)
 
-    β = norm(b)
+    β  = norm(b)
     qk = copy(b)
 
     @views for k = 1:m
@@ -91,17 +91,17 @@ function arnoldi(a::AbstractArray{T,2},b::AbstractArray{T,1},tol::T,m::S=length(
 
 end
 
-function arnoldi(f::Function,x::Array{T,1},r::Array{T,1},tol::T,m::S=length(x)) where {T <: AbstractFloat, S <: Integer} # Inexact
+function arnoldi(f::Function,x::AbstractVector{T},r::AbstractVector{T},tol::T,m::S=length(x)) where {T <: AbstractFloat, S <: Integer} # Inexact
 
     n = length(x)
     if m > n
         error("'m' must be no larger than the length of 'b' ")
     end
 
-    q = zeros(n,m)
-    h = zeros(m+1,m)
+    q = zeros(T,n,m)
+    h = zeros(T,m+1,m)
 
-    β = norm(r)
+    β  = norm(r)
     qk = copy(r)
 
     @views for k = 1:m
@@ -122,17 +122,17 @@ function arnoldi(f::Function,x::Array{T,1},r::Array{T,1},tol::T,m::S=length(x)) 
 
 end
 
-function arnoldi_inplace(f::Function,x::Array{T,1},r::Array{T,1},tol::T,m::S=length(x)) where {T <: AbstractFloat, S <: Integer} # Inexact
+function arnoldi_inplace(f::Function,x::AbstractVector{T},r::AbstractVector{T},tol::T,m::S=length(x)) where {T <: AbstractFloat, S <: Integer} # Inexact
 
     n = length(x)
     if m > n
         error("'m' must be no larger than the length of 'b' ")
     end
 
-    q = zeros(n,m)
-    h = zeros(m+1,m)
+    q = zeros(T,n,m)
+    h = zeros(T,m+1,m)
 
-    β = norm(r)
+    β  = norm(r)
     qk = copy(r)
 
     @views for k = 1:m

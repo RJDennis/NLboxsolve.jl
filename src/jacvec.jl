@@ -1,4 +1,4 @@
-function jacvec(f::Function,x::Array{T,1},v::Array{T,1}) where {T <: AbstractFloat}
+function jacvec(f::Function,x::AbstractVector{T},v::AbstractVector{T}) where {T <: AbstractFloat}
 
     ep = 1e-10
     jvec = imag(f(x+ep*im*v))/ep
@@ -7,21 +7,21 @@ function jacvec(f::Function,x::Array{T,1},v::Array{T,1}) where {T <: AbstractFlo
 
 end
 
-function jacvec!(jvec::Array{T,1},f::Function,x::Array{T,1},v::AbstractArray{T,1}) where {T <: AbstractFloat}
+function jacvec!(jvec::AbstractVector{T},f::Function,x::AbstractVector{T},v::AbstractVector{T}) where {T <: AbstractFloat}
 
     ep = 1e-10
     jvec .= imag(f(x+ep*im*v))/ep
 
 end
 
-function jacvec_inplace!(jvec::Array{T,1},f::Function,x::Array{T,1},v::AbstractArray{T,1}) where {T <: AbstractFloat}
+function jacvec_inplace!(jvec::AbstractVector{T},f::Function,x::AbstractVector{T},v::AbstractVector{T}) where {T <: AbstractFloat}
 
     n = length(x)
-    ffk = Array{Complex{T},1}(undef,n)
+    Fk = Vector{Complex{T}}(undef,n)
 
     ep = 1e-10
-    f(ffk,x+ep*im*v)
+    f(Fk,x+ep*im*v)
 
-    jvec .= imag(ffk)/ep
+    jvec .= imag(Fk)/ep
 
 end

@@ -80,7 +80,7 @@ function closure_chks(g,x,lb,ub,f::Function)
 
 end
 
-function MCP_mid(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
+function MCP_mid(f::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -109,7 +109,7 @@ function MCP_mid(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T
 
 end
 
-function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
+function MCP_fischer_burmeister(f::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -138,7 +138,7 @@ function MCP_fischer_burmeister(f::Function,x::Array{T,1},lb::Array{T,1},ub::Arr
 
 end
 
-function MCP_chks(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
+function MCP_chks(f::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T},xtol::T,ftol::T,maxiters::S,method::Symbol,sparsejac::Symbol) where {T <: AbstractFloat, S<:Integer}
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -167,7 +167,7 @@ function MCP_chks(f::Function,x::Array{T,1},lb::Array{T,1},ub::Array{T,1},xtol::
 
 end
 
-function mcpsolve(f::Function,x::Array{T,1},lb::Array{T,1} = [-Inf for _ in eachindex(x)],ub::Array{T,1}= [Inf for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:mid,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
+function mcpsolve(f::Function,x::AbstractVector{T},lb = [-T(Inf) for _ in eachindex(x)],ub = [T(Inf) for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,reformulation::Symbol=:mid,method::Symbol=:lm_ar,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if reformulation == :mid
         return MCP_mid(f,x,lb,ub,xtol,ftol,iterations,method,sparsejac)

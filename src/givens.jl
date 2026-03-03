@@ -1,4 +1,4 @@
-function givens(x::Array{N,1}) where {N <: Number}
+function givens(x::AbstractVector{N}) where {N <: Number}
 
     if length(x) != 2
         error("'x' should have length 2")
@@ -26,7 +26,7 @@ function givens(x::Array{N,1}) where {N <: Number}
 
 end
 
-function givens!(g::Array{N,2},x::AbstractArray{N,1}) where {N <: Number}
+function givens!(g::AbstractMatrix{N},x::AbstractVector{N}) where {N <: Number}
 
     if length(x) != 2
         error("'x' should have length 2")
