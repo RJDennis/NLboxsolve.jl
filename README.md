@@ -5,7 +5,7 @@ Introduction
 
 NLboxsolve.jl is a package containing a small collection of algorithms for solving systems of non-linear equations subject to box-constraints: ```F(x) = 0```, ``` lb <= x <= ub``` (element-by-element), where it is assumed that the box-constraint admits a solution.  The package can also solve mixed complementarity problems, leveraging the non-linear box-solvers to do so.
 
-The collection contains seven algorithms for solving box-constrained non-linear systems: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, two trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
+The collection contains eight algorithms for solving box-constrained non-linear systems: one based on Newton's (or Newton-Raphson's) method, two based on Levenberg-Marquardt, three trust region methods, and two based on Newton-Krylov methods, one of which is Jacobian-free.
 
 Installing
 ==========
@@ -55,6 +55,7 @@ The solution algorithms are the following:
 - Amini and Rostami (2016) (method = :lm_ar) (this is the default method)
 - Kimiaei (2017) (method = :tr) (this is a nonmonotone adaptive trust region method)
 - Bellavia, Macconi, and Pieraccini (2012) (method = :dogleg) (Sometimes known as CoDoSol)
+- Coleman and Li (1996) (method = :cl)
 - Chen and Vuik (2016) (method = :nk)
 - Jacobian-free Newton Krylov (method = :jfnk)
 

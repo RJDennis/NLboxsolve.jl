@@ -22,6 +22,7 @@ export nlboxsolve,
        #constrained_levenberg_marquardt_ar,
        #constrained_trust_region,
        #constrained_dogleg_solver,
+       #constrained_coleman_li,
        #constrained_newton_krylov,
        #constrained_jacobian_free_newton_krylov,
        #constrained_newton_sparse,
@@ -29,6 +30,7 @@ export nlboxsolve,
        #constrained_levenberg_marquardt_ar_sparse,
        #constrained_trust_region_sparse,
        #constrained_dogleg_solver_sparse,
+       #constrained_coleman_li_sparse,
        #constrained_newton_krylov_sparse
        
     end

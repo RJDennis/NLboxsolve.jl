@@ -38,13 +38,7 @@ function constrained_newton(f::Function,x::AbstractVector{T},lb::AbstractVector{
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -177,13 +171,7 @@ function constrained_newton(f::Function,j::Function,x::AbstractVector{T},lb::Abs
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -329,13 +317,7 @@ function constrained_newton_sparse(f::Function,x::AbstractVector{T},lb::Abstract
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -469,13 +451,7 @@ function constrained_levenberg_marquardt_kyf(f::Function,x::AbstractVector{T},lb
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -691,13 +667,7 @@ function constrained_levenberg_marquardt_kyf(f::Function,j::Function,x::Abstract
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -928,13 +898,7 @@ function constrained_levenberg_marquardt_kyf_sparse(f::Function,x::AbstractVecto
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -1152,13 +1116,7 @@ function constrained_levenberg_marquardt_ar(f::Function,x::AbstractVector{T},lb:
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -1379,13 +1337,7 @@ function constrained_levenberg_marquardt_ar(f::Function,j::Function,x::AbstractV
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -1621,13 +1573,7 @@ function constrained_levenberg_marquardt_ar_sparse(f::Function,x::AbstractVector
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -1850,13 +1796,7 @@ function constrained_trust_region(f::Function,x::AbstractVector{T},lb::AbstractV
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -2219,13 +2159,7 @@ function constrained_trust_region(f::Function,j::Function,x::AbstractVector{T},l
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -2597,13 +2531,7 @@ function constrained_trust_region_sparse(f::Function,x::AbstractVector{T},lb::Ab
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -2960,7 +2888,7 @@ function constrained_trust_region_sparse_inplace(f::Function,x::AbstractVector{T
   
 end
 
-function coleman_li(gradf::AbstractVector{T},x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T}) where {T <: AbstractFloat}
+function coleman_li_scale(gradf::AbstractVector{T},x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T}) where {T <: AbstractFloat}
 
     df = similar(gradf)
 
@@ -3081,13 +3009,7 @@ function constrained_dogleg_solver(f::Function,x::AbstractVector{T},lb::Abstract
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -3144,7 +3066,7 @@ function constrained_dogleg_solver_outplace(f::Function,x::AbstractVector{T},lb:
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
 
         gk .= -df.*gradf
@@ -3266,7 +3188,7 @@ function constrained_dogleg_solver_inplace(f::Function,x::AbstractVector{T},lb::
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
 
         gk .= -df.*gradf
@@ -3348,13 +3270,7 @@ function constrained_dogleg_solver(f::Function,j::Function,x::AbstractVector{T},
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -3417,7 +3333,7 @@ function constrained_dogleg_solver_outplace(f::Function,j::Function,x::AbstractV
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
 
         gk .= -df.*gradf
@@ -3547,7 +3463,7 @@ function constrained_dogleg_solver_inplace(f::Function,j::Function,x::AbstractVe
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= Diagonal(df.^(-1/2))
 
         gk .= -df.*gradf
@@ -3629,13 +3545,7 @@ function constrained_dogleg_solver_sparse(f::Function,x::AbstractVector{T},lb::A
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -3692,7 +3602,7 @@ function constrained_dogleg_solver_sparse_outplace(f::Function,x::AbstractVector
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
 
         gk .= -df.*gradf
@@ -3814,7 +3724,7 @@ function constrained_dogleg_solver_sparse_inplace(f::Function,x::AbstractVector{
 
         gradf = jk'*Fk
 
-        df .= coleman_li(gradf,xk,lb,ub)
+        df .= coleman_li_scale(gradf,xk,lb,ub)
         Gk .= sparse(Diagonal(df.^(-1/2)))
 
         gk .= -df.*gradf
@@ -3898,13 +3808,7 @@ function constrained_newton_krylov(f::Function,x::AbstractVector{T},lb::Abstract
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -4125,13 +4029,7 @@ function constrained_newton_krylov(f::Function,j::Function,x::AbstractVector{T},
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -4367,13 +4265,7 @@ function constrained_newton_krylov_sparse(f::Function,x::AbstractVector{T},lb::A
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -4596,13 +4488,7 @@ function constrained_jacobian_free_newton_krylov(f::Function,x::AbstractVector{T
         error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
     end
 
-    for i in eachindex(x)
-        if x[i] < lb[i] || x[i] > ub[i]
-            println("Warning: Initial point is outside the box.")
-            x .= clamp.(x,lb,ub) # Put the initial guess inside the box
-            break
-        end
-    end
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
 
     f_inplace = !applicable(f,x) # Check if function is inplace
 
@@ -4802,6 +4688,675 @@ function constrained_jacobian_free_newton_krylov_inplace(f::Function,x::Abstract
  
 end
 
+###########################
+
+# Constrained Coleman Li (1996)
+
+function _steihaug_cg(g::AbstractVector{T}, B, Δ::T, iterations::S) where {T <: AbstractFloat, S <: Integer}
+
+    n  = length(g)
+    q  = zeros(T, n)
+    r  = copy(g)      
+    p  = -copy(r)     
+    rr = dot(r,r)
+    ε  = 1e-10*rr     
+
+    rr == 0 && return q    
+
+    for _ in 1:iterations
+
+        Bp = B * p
+        κ  = dot(p,Bp)    
+
+        κ ≤ 0 && return _tr_boundary_point(q, p, Δ)
+
+        α = rr / κ
+
+        norm(q .+ α .* p) ≥ Δ && return _tr_boundary_point(q, p, Δ)
+
+        q   = q .+ α .* p
+        r   = r .+ α .* Bp
+        rr_new = dot(r,r)
+
+        rr_new ≤ ε && break   
+
+        β  = rr_new / rr
+        p  = -r .+ β .* p    
+        rr = rr_new
+
+    end
+
+    return q
+
+end
+
+function _tr_boundary_point(q::AbstractVector{T}, p::AbstractVector{T}, Δ::T) where {T <: AbstractFloat}
+
+    qq   = dot(q,q)
+    qp   = dot(q,p)
+    pp   = dot(p,p)
+    disc = qp^2 - pp * (qq - Δ^2) 
+    τ    = (-qp + sqrt(max(disc, zero(T)))) / pp
+
+    return q .+ τ .* p
+
+end
+
+function constrained_coleman_li(f::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T};xtol::T=1e-8,ftol::T=1e-8,iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_coleman_li_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    else
+        return constrained_coleman_li_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    end
+
+end
+
+function constrained_coleman_li_outplace(f::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = Matrix{T}(undef, n, n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state   = SolverState(0, NaN, maximum(abs, f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        Fk = f(xk)
+
+        jk .= ForwardDiff.jacobian(f, xk)
+        if !all(isfinite, jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = Diagonal(df)
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        Fn    = f(xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs,xn .- xk)
+        lenf = maximum(abs,f(xn))
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    results = BoxSolverResults(:coleman_li, x, xk, f(xk), lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
+function constrained_coleman_li_inplace(f::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = Matrix{T}(undef, n, n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    Fk = Vector{T}(undef, n)
+    Fn = Vector{T}(undef, n)
+
+    # Initialize solution trace
+    f(Fk, xk)
+    solver_state   = SolverState(0, NaN, maximum(abs, Fk))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        f(Fk, xk)
+
+        jk .= ForwardDiff.jacobian(f, Fk, xk)
+        if !all(isfinite, jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = Diagonal(df)
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        f(Fn, xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs, xn .- xk)
+        lenf = maximum(abs, Fn)
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    f(Fn, xk)
+    results = BoxSolverResults(:coleman_li, x, xk, Fn, lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
+function constrained_coleman_li(f::Function,j::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T};xtol::T=1e-8,ftol::T=1e-8,iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_coleman_li_outplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    else
+        return constrained_coleman_li_inplace(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    end
+
+end
+
+function constrained_coleman_li_outplace(f::Function, j::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = Matrix{T}(undef, n, n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state   = SolverState(0, NaN, maximum(abs, f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        Fk = f(xk)
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = Diagonal(df)
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        Fn    = f(xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs,xn .- xk)
+        lenf = maximum(abs,f(xn))
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    results = BoxSolverResults(:coleman_li, x, xk, f(xk), lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
+function constrained_coleman_li_inplace(f::Function, j::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    j_inplace = !applicable(j,x)
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = Matrix{T}(undef, n, n)
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    Fk = Vector{T}(undef, n)
+    Fn = Vector{T}(undef, n)
+
+    # Initialize solution trace
+    f(Fk, xk)
+    solver_state   = SolverState(0, NaN, maximum(abs, Fk))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        f(Fk, xk)
+
+        if j_inplace == false
+            jk .= j(xk)
+        else
+            j(jk,xk)
+        end
+        if !all(isfinite,jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = Diagonal(df)
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        f(Fn, xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs, xn .- xk)
+        lenf = maximum(abs, Fn)
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    f(Fn, xk)
+    results = BoxSolverResults(:coleman_li, x, xk, Fn, lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
+function constrained_coleman_li_sparse(f::Function,x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T};xtol::T=1e-8,ftol::T=1e-8,iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    if box_check(lb,ub) !== true # Check that box is formed correctly
+        error("Problem with box constaint.  Check that lb and ub are formed correctly and are entered in the correct order")
+    end
+
+    x .= clamp.(x,lb,ub) # Put the initial guess inside the box
+
+    f_inplace = !applicable(f,x) # Check if function is inplace
+
+    if f_inplace == false
+        return constrained_coleman_li_sparse_outplace(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    else
+        return constrained_coleman_li_sparse_inplace(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    end
+
+end
+
+function constrained_coleman_li_sparse_outplace(f::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = sparse(Matrix{T}(undef, n, n))
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    # Initialize solution trace
+    solver_state   = SolverState(0, NaN, maximum(abs, f(x)))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        Fk = f(xk)
+
+        jk .= sparse(ForwardDiff.jacobian(f, xk))
+        if !all(isfinite, jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = sparse(Diagonal(df))
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        Fn    = f(xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs,xn .- xk)
+        lenf = maximum(abs,f(xn))
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    results = BoxSolverResults(:coleman_li, x, xk, f(xk), lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
+function constrained_coleman_li_sparse_inplace(f::Function, x::AbstractVector{T}, lb::AbstractVector{T}, ub::AbstractVector{T}; xtol::T=1e-8, ftol::T=1e-8, iterations::S=100) where {T <: AbstractFloat, S <: Integer}
+
+    n  = length(x)
+    xk = copy(x)
+    xn = similar(x)
+    df = similar(x)
+    gk = similar(x)
+
+    jk = sparse(Matrix{T}(undef, n, n))
+
+    lenx = zero(T)
+    lenf = zero(T)
+
+    Fk = Vector{T}(undef, n)
+    Fn = Vector{T}(undef, n)
+
+    # Initialize solution trace
+    f(Fk, xk)
+    solver_state   = SolverState(0, NaN, maximum(abs, Fk))
+    solution_trace = SolverTrace(Array{SolverState}(undef, 0))
+    push!(solution_trace.trace, solver_state)
+
+    # Initialize solver parameters
+    δ     = 1.0
+    δ_max = 1_000
+    η1    = 0.1
+    η2    = 0.9
+    γ1    = 0.25
+    γ2    = 2.5
+
+    xk .= clamp.(x, lb, ub)
+
+    iter = 0
+    while true
+
+        f(Fk, xk)
+
+        jk .= sparse(ForwardDiff.jacobian(f, Fk, xk))
+        if !all(isfinite, jk)
+            error("The jacobian has non-finite elements")
+        end
+
+        gradf = jk' * Fk
+
+        df .= coleman_li_scale(gradf, xk, lb, ub).^(1/2)
+        gk .= df .* gradf
+
+        D = sparse(Diagonal(df))
+        B = Symmetric(D * (jk' * jk) * D)
+
+        q = _steihaug_cg(gk, B, δ, n)
+
+        xn .= clamp.(xk .+ df .* q, lb, ub)
+
+        fval  = 0.5 * dot(Fk, Fk)
+        pred  = -(dot(gk, q) + 0.5 * dot(q, B * q))
+        f(Fn, xn)
+        fnew  = 0.5 * dot(Fn, Fn)
+        ared  = fval - fnew
+        ρ     = pred > eps(T) ? ared / pred : T(ared ≥ 0 ? 1 : -1)
+
+        lenx = maximum(abs, xn .- xk)
+        lenf = maximum(abs, Fn)
+
+        if ρ ≥ η1
+            xk .= xn
+        end
+
+        if ρ < η1 # Shrink the radius
+            δ = γ1 * δ
+        elseif ρ ≥ η2 && norm(q) ≥ 0.9 * δ # Expand the radius
+            δ = min(γ2 * δ, δ_max)
+        end
+
+        iter += 1
+
+        solver_state = SolverState(iter, lenx, lenf)
+        push!(solution_trace.trace, solver_state)
+
+        δ ≤ eps(T) * (1 + norm(xk)) && break
+
+        if iter >= iterations || (lenx <= xtol && δ <= xtol) || (lenf <= ftol)
+            break
+        end
+
+    end
+
+    f(Fn, xk)
+    results = BoxSolverResults(:coleman_li, x, xk, Fn, lenx, lenf, iter, solution_trace)
+
+    return results
+
+end
+
 function nlboxsolve(f::Function,x::AbstractVector{T},lb::Vector{T} = [-T(Inf) for _ in eachindex(x)],ub::Vector{T}= [T(Inf) for _ in eachindex(x)];xtol::T=1e-8,ftol::T=1e-8,iterations::S=100,method::Symbol=:lm_ar,krylovdim::S=30,sparsejac::Symbol=:no) where {T <: AbstractFloat, S <: Integer}
 
     if method == :nr
@@ -4834,6 +5389,12 @@ function nlboxsolve(f::Function,x::AbstractVector{T},lb::Vector{T} = [-T(Inf) fo
         elseif sparsejac == :yes
             return constrained_dogleg_solver_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
         end
+    elseif method == :cl
+        if sparsejac == :no
+            return constrained_coleman_li(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+        elseif sparsejac == :yes
+            return constrained_coleman_li_sparse(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+        end
     elseif method == :nk
         if sparsejac == :no
             return constrained_newton_krylov(f,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations,krylovdim=krylovdim)
@@ -4860,6 +5421,8 @@ function nlboxsolve(f::Function,j::Function,x::AbstractVector{T},lb = [-T(Inf) f
         return constrained_trust_region(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
     elseif method == :dogleg
         return constrained_dogleg_solver(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
+    elseif method == :cl
+        return constrained_coleman_li(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations)
     elseif method == :nk
         return constrained_newton_krylov(f,j,x,lb,ub,xtol=xtol,ftol=ftol,iterations=iterations,krylovdim=krylovdim)
     else
