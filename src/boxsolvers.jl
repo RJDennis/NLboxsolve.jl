@@ -2895,18 +2895,20 @@ function coleman_li_scale(gradf::AbstractVector{T},x::AbstractVector{T},lb::Abst
     @inbounds for i in eachindex(df)
         gi = gradf[i]
         if gi < 0.0 && ub[i] < Inf
-            df[i] = ub[i] - x[i]
+            df[i] = max(ub[i] - x[i],eps(T))
         elseif gi > 0.0 && lb[i] > -Inf
-            df[i] = x[i] - lb[i]
+            df[i] = max(x[i] - lb[i],eps(T))
         elseif gi == 0.0
             dl = lb[i] > -Inf ? x[i] - lb[i] : Inf
             du = ub[i] < Inf  ? ub[i] - x[i] : Inf
-            df[i] = isinf(min(dl, du)) ? 1.0 : min(dl, du)
+            df[i] = max(isinf(min(dl, du)) ? 1.0 : min(dl, du),eps(T))
         else
             df[i] = 1.0
         end
     end
+
     return df
+    
 end
 
 function compute_gammatildaplus(pc_pkn::AbstractVector{T},x::AbstractVector{T},lb::AbstractVector{T},ub::AbstractVector{T},pc::AbstractVector{T}) where {T <: AbstractFloat}
@@ -2985,7 +2987,7 @@ function step_selection(Fk::AbstractVector{T},x::AbstractVector{T},Gk::AbstractM
         
     γhat   = ((Fk+jk*pc)'*jk*pc_pkn)/norm(jk*pc_pkn)^2
 
-    r      = ((pc'Gk.^2*pc_pkn)^2 - norm(Gk*pc_pkn)^2*(norm(Gk*pc)^2 - δk^2))^0.5
+    r      = max(0.0,((pc'Gk.^2*pc_pkn)^2 - norm(Gk*pc_pkn)^2*(norm(Gk*pc)^2 - δk^2)))^0.5
     γplus  = (pc'*Gk.^2*pc_pkn + r)/norm(Gk*pc_pkn)^2
     γminus = (pc'*Gk.^2*pc_pkn - r)/norm(Gk*pc_pkn)^2
 
